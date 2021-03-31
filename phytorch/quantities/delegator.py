@@ -5,6 +5,7 @@ import typing as tp
 from abc import ABC
 from dataclasses import dataclass
 from functools import reduce, update_wrapper
+from numbers import Integral, Real
 
 from more_itertools import collapse
 
@@ -56,6 +57,9 @@ class QuantityDelegatorBase(Delegator):
 
     def finalize_get(self, qty, func, unit, *args, **kwargs):
         with qty.delegator_context:
+            # TODO: Nasty hack -> https://github.com/pytorch/pytorch/issues/54983
+            args = tuple(float(arg) if isinstance(arg, Real) and not isinstance(arg, Integral)
+                         else arg for arg in args)
             if self.func_takes_self:
                 args = (qty,) + args
             if self.incremental:

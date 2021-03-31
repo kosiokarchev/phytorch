@@ -1,16 +1,15 @@
 import typing as tp
-from numbers import Number
+from numbers import Real
 
 import numpy as np
 import torch
 from frozendict import frozendict
 from torch import Tensor
 
-
 from .functypes import DictByName, TORCH_FUNCTYPES_H
 from ..delegator import Delegator, QuantityDelegator, QuantityDelegatorBase
 from ..quantity import GenericQuantity, UnitFuncType
-from ...units.unit import Unit
+from ...units.Unit import Unit
 
 
 class TorchQuantity(GenericQuantity[Tensor], Tensor):
@@ -25,7 +24,8 @@ class TorchQuantity(GenericQuantity[Tensor], Tensor):
     def _to(cls, args, unit: Unit, strict=False):
         return (
             args.to(unit=unit) if isinstance(args, GenericQuantity)
-            else args / unit.scale if (strict and isinstance(args, (Number, Tensor)))
+            # TODO: Nasty hack: https://github.com/pytorch/pytorch/issues/54983
+            else args / float(unit.scale) if (strict and isinstance(args, (Real, Tensor)))
             else args if (isinstance(args, (str, torch.Size, Tensor, np.ndarray, tp.Iterator))
                           or not isinstance(args, tp.Iterable))
             else type(args)(cls._to(a, unit, strict=strict) for a in args))
@@ -79,5 +79,5 @@ class TorchQuantity(GenericQuantity[Tensor], Tensor):
             with self.delegator_context:
                 return super().__torch_function__(func, types, args, kwargs)
         else:
-            return self._to(super().__torch_function__(func, types, args, kwargs),
-                            self.unit)
+            res = super().__torch_function__(func, types, args, kwargs)
+            return self._to(res, self.unit)

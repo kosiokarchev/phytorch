@@ -6,7 +6,7 @@ from fractions import Fraction
 
 from .delegator import Delegating, PowerDelegator, ProductDelegator, QuantityDelegator
 from ..units.angular import rad
-from ..units.unit import Unit
+from ..units.Unit import Unit
 
 
 _T = tp.TypeVar('_T')
@@ -131,6 +131,7 @@ class GenericQuantity(Delegating, tp.Generic[_T]):
         if unit is not None:
             if ret.unit is not None:
                 with self.unitless_context(ret.clone() if ret is self else ret) as ret:
+                    # TODO: better handling of float()...
                     ret *= float(self.unit.to(unit))
             ret.unit = unit
         return ret
