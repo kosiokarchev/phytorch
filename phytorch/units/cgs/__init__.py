@@ -1,7 +1,5 @@
 # noinspection PyUnresolvedReferences
-from ..si.base import s, second
-# noinspection PyUnresolvedReferences
-from ..si.prefixed import g, gram, cm, centimeter, centimetre
+from ..si import s, second, g, gram, cm, centimeter, centimetre
 
 
 gal = Gal = (cm / s**2).set_name('Gal')

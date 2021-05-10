@@ -7,18 +7,18 @@ from frozendict import frozendict
 from torch import Tensor
 
 from .functypes import DictByName, TORCH_FUNCTYPES_H
-from ..delegator import Delegator, QuantityDelegator, QuantityDelegatorBase
+from ..delegation.delegator import Delegator
+from ..delegation.quantity_delegators import QuantityDelegator, QuantityDelegatorBase
 from ..quantity import GenericQuantity, UnitFuncType
 from ...units.Unit import Unit
 
 
 class TorchQuantity(GenericQuantity[Tensor], Tensor):
-    # Needs to exist in this class because of the the cls argument...
     def __new__(cls, *args, unit: Unit, **kwargs):
-        return super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls, *args, unit=unit, **kwargs)
 
     def as_subclass(self, cls):
-        return self._fill_quantity(super().as_subclass(cls))
+        return self._meta_update(self._T.as_subclass(self, cls))
 
     @classmethod
     def _to(cls, args, unit: Unit, strict=False):
@@ -51,19 +51,19 @@ class TorchQuantity(GenericQuantity[Tensor], Tensor):
     hypot, dist, maximum, minimum = (QuantityDelegator() for _ in range(4))
     ger = GenericQuantity.outer
     storage = QuantityDelegator(out_unit=None)
-    view, movedim, narrow = (QuantityDelegator(strict=False) for _ in range(3))
+    gather, view, movedim, narrow = (QuantityDelegator(strict=False) for _ in range(4))
 
-    new, new_tensor, new_full, new_ones, new_zeros, new_empty = (Delegator() for _ in range(6))
+    new, new_tensor, new_full, new_ones, new_zeros, new_empty = (QuantityDelegator(strict=False) for _ in range(6))
 
     def __iter__(self):
         with self.delegator_context:
-            return map(self._fill_quantity, super().__iter__())
+            return map(self._meta_update, super().__iter__())
 
     def __torch_function__(self, func, types, args=(), kwargs=frozendict()):
         if ((_func := getattr(type(self), func.__name__, None)) is not None
                 and _func is not func):
             with self.delegator_context:
-                return super().__torch_function__(_func, types, args, kwargs)
+                return self.__torch_function__(_func, types, args, kwargs)
 
         functype = self.FUNCTYPES.get(func, UnitFuncType.SAME)
         # if func is not Tensor.__repr__:

@@ -7,7 +7,7 @@ from torch import Tensor
 
 
 from ..quantity import UnitFuncType  # Must come before delegator import!
-from ..delegator import ProductDelegator, QuantityDelegator
+from ..delegation.quantity_delegators import ProductDelegator, QuantityDelegator
 
 
 if 'a' > 'b':

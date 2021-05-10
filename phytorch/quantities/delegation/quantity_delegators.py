@@ -1,61 +1,29 @@
-import contextlib
-import dataclasses
+from __future__ import annotations
+
 import operator
-import typing as tp
-from abc import ABC
 from dataclasses import dataclass
-from functools import reduce, update_wrapper
+from functools import reduce
 from numbers import Integral, Real
+from typing import Callable, Iterable, Literal, Optional, Union
 
 from more_itertools import collapse
 
-from . import quantity
-from ..units.Unit import Unit
-
-
-class Delegating(ABC):
-    @property
-    def delegator_context(self):
-        return contextlib.nullcontext()
-
-
-@dataclass(eq=False)
-class Delegator:
-    name: str = dataclasses.field(init=False)
-    func_takes_self: bool = True
-
-    def __set_name__(self, owner, name):
-        self.name = name
-
-    def _get(self, func):
-        def f(slf: Delegating, *args, **kwargs):
-            with slf.delegator_context:
-                if self.func_takes_self:
-                    args = (slf,) + args
-                return func(*args, **kwargs)
-        return f
-
-    def __get__(self, instance, owner: tp.Type['quantity.GenericQuantity']):
-        if owner is quantity.GenericQuantity:
-            return self
-        func = getattr(owner._T, self.name)
-        ret = update_wrapper(self._get(func), func)
-        # print('getting', self.name, 'of', owner._T, 'result', ret)
-        setattr(owner, self.name, ret)
-        return getattr(instance, self.name) if instance is not None else ret
+from .delegator import Delegator
+from .. import quantity
+from ...units.Unit import Unit
 
 
 @dataclass(eq=False)
 class QuantityDelegatorBase(Delegator):
     incremental: bool = False
 
-    _filter: tp.Callable[['quantity.GenericQuantity', tp.Iterable], tp.Iterable]\
+    _filter: Callable[[quantity.GenericQuantity, Iterable], Iterable]\
         = staticmethod(lambda self, qty, args: collapse(args, base_type=qty._T))
 
-    def filter(self, qty: 'quantity.GenericQuantity', args: tp.Iterable) -> tp.Iterable:
+    def filter(self, qty: quantity.GenericQuantity, args: Iterable) -> Iterable:
         return self._filter(self, qty, args)
 
-    def finalize_get(self, qty, func, unit, *args, **kwargs):
+    def finalize_get(self, qty: quantity.GenericQuantity, func, unit, *args, **kwargs):
         with qty.delegator_context:
             # TODO: Nasty hack -> https://github.com/pytorch/pytorch/issues/54983
             args = tuple(float(arg) if isinstance(arg, Real) and not isinstance(arg, Integral)
@@ -67,29 +35,30 @@ class QuantityDelegatorBase(Delegator):
                 qty.unit = unit
                 return qty
             else:
-                return qty._fill_quantity(func(*args, **kwargs), unit=unit)
+                return qty._meta_update(func(*args, **kwargs), unit=unit)
 
 
 @dataclass(eq=False)
 class QuantityDelegator(QuantityDelegatorBase):
-    in_unit: tp.Optional[Unit] = None
-    out_unit: tp.Union[tp.Literal[False], None, Unit, tp.Callable[[Unit], Unit]] = None
+    in_unit: Optional[Unit] = None
+    out_unit: Union[Literal[False], None, Unit, Callable[[Unit], Unit]] = None
 
     strict: bool = True
 
-    _to: tp.Callable[['quantity.GenericQuantity', tp.Iterable, Unit], tp.Iterable]\
+    _to: Callable[[quantity.GenericQuantity, Iterable, Unit], Iterable]\
         = staticmethod(lambda self, qty, args, unit: qty._to(args, unit, self.strict))
 
-    def to(self, qty: 'quantity.GenericQuantity', args: tp.Iterable, unit: Unit) -> tp.Iterable:
+    def to(self, qty: quantity.GenericQuantity, args: Iterable, unit: Unit) -> Iterable:
         return self._to(self, qty, args, unit)
 
     def _get(self, func):
-        def f(qty: 'quantity.GenericQuantity', *args, **kwargs):
+        def f(qty: quantity.GenericQuantity, *args, **kwargs):
             in_unit = self.in_unit if self.in_unit is not None else qty.unit
             if self.func_takes_self:
                 args = (qty,) + args
             assert all(
-                a.unit.dimension == in_unit.dimension if isinstance(a, quantity.GenericQuantity)
+                a.unit.dimension == in_unit.dimension
+                if isinstance(a, quantity.GenericQuantity) and a.unit is not None
                 else not (self.strict and in_unit)
                 for a in self.filter(qty, args)
             ), f'All inputs have to be of dimension {in_unit.dimension}.'
@@ -102,24 +71,29 @@ class QuantityDelegator(QuantityDelegatorBase):
 
 @dataclass(eq=False)
 class ProductDelegator(QuantityDelegatorBase):
-    op: tp.Callable = operator.mul
+    op: Callable = operator.mul
     flip: bool = False
 
     def _get(self, func):
-        def f(qty: 'quantity.GenericQuantity', *args, **kwargs):
+        def f(qty: quantity.GenericQuantity, *args, **kwargs):
+            _func = func
             if len(args) == 1:
-                otherunit = args[0].unit if isinstance(args[0], quantity.GenericQuantity) else Unit()
+                if isinstance(arg := args[0], Unit):
+                    otherunit = arg
+                    args = (1,)
+                else:
+                    otherunit = arg.unit if isinstance(arg, quantity.GenericQuantity) else Unit()
                 unit = self.op(*((otherunit, qty.unit) if self.flip else (qty.unit, otherunit)))
             else:
                 unit = reduce(self.op, (a.unit for a in self._filter(qty, args)
                                         if isinstance(a, quantity.GenericQuantity)))
-            return self.finalize_get(qty, func, unit, *args, **kwargs)
+            return self.finalize_get(qty, _func, unit, *args, **kwargs)
         return f
 
 
 class PowerDelegator(QuantityDelegatorBase):
     def _get(self, func):
-        def f(qty: 'quantity.GenericQuantity', other, *args, **kwargs):
+        def f(qty: quantity.GenericQuantity, other, *args, **kwargs):
             try:
                 other = float(other)
                 return self.finalize_get(qty, func, qty.unit**other, other, *args, **kwargs)

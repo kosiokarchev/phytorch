@@ -1,40 +1,44 @@
-import contextlib
+from __future__ import annotations
+
 import operator
-import typing as tp
 from enum import auto, Enum
 from fractions import Fraction
+from typing import Protocol, Type, TypeVar, Union
 
-from .delegator import Delegating, PowerDelegator, ProductDelegator, QuantityDelegator
+from .delegation.delegating import Delegating
+from .delegation.quantity_delegators import PowerDelegator, ProductDelegator, QuantityDelegator
+from ..meta import Meta
 from ..units.angular import rad
 from ..units.Unit import Unit
 
 
-_T = tp.TypeVar('_T')
+_tt = TypeVar('_tt')
 
 
-class GenericQuantity(Delegating, tp.Generic[_T]):
-    unit: Unit = None
-    _generic_class_index = 0
+class QuantityBackendProtocol(Protocol):
+    def as_subclass(self: _tt, cls: Type[_tt]) -> _tt: ...
+    def __setitem__(self: _tt, key, value): ...
+    def clone(self: _tt, *args, **kwargs) -> _tt: ...
+    def to(self: _tt, *args, **kwargs) -> _tt: ...
 
-    @classmethod
-    @property
-    def _T(cls):
-        return tp.get_args(cls.__orig_bases__[cls._generic_class_index])[0]
 
-    def __init__(self, *args, unit: Unit, **kwargs):
-        super().__init__()
-        self.unit = unit
+_t = TypeVar('_t', Type[QuantityBackendProtocol], type)
 
-    def _fill_quantity(self, a, unit=None):
-        if unit is not False and isinstance(a, self._T):
-            if not issubclass(type(a), type(self)):
-                a.__class__ = type(self)
-            a.unit = unit(self.unit) if callable(unit) else unit if isinstance(unit, Unit) else self.unit
-        return a
+
+class GenericQuantity(Delegating[_t], Meta):
+    unit: Meta.meta_attribute(Unit) = None
+    _T: Union[Type[QuantityBackendProtocol], Type]
+
+    def _meta_update(self, other: GenericQuantity, /, unit=None, **kwargs):
+        if unit is not False:
+            kwargs['unit'] = unit(self.unit) if callable(unit) else unit if isinstance(unit, Unit) else self.unit
+        return super()._meta_update(
+            other if isinstance(other, type(self)) else self._T.as_subclass(other, type(self)),
+            **kwargs)
 
     def __repr__(self):
-        with self.unitless_context() as uself:
-            trep = uself.__repr__()
+        with self.delegator_context:
+            trep = super().__repr__()
         if '\n' in trep:
             trep = '\n' + trep
         return f'Quantity({trep} {self.unit!s})'
@@ -50,7 +54,7 @@ class GenericQuantity(Delegating, tp.Generic[_T]):
             raise TypeError(f'Can only assign a {self._T} to unitful {type(self)}.')
 
         with self.delegator_context:
-            return super().__setitem__(key, value)
+            return self._T.__setitem__(self, key, value)
 
     __add__, __radd__, __iadd__, __sub__, __rsub__, __isub__ = (QuantityDelegator() for _ in range(6))
 
@@ -106,7 +110,7 @@ class GenericQuantity(Delegating, tp.Generic[_T]):
     # These are actually the same as the transcendental, but whatever
     sin, cos, tan = (QuantityDelegator(in_unit=rad, out_unit=False) for _ in range(3))
     (asin, arcsin), (acos, arccos), (atan, arctan) = (
-        2*(QuantityDelegator(in_unit=Unit(), out_unit=rad),) for _ in range(3))
+        2 * (QuantityDelegator(in_unit=Unit(), out_unit=rad),) for _ in range(3))
 
     atan2 = QuantityDelegator(out_unit=rad)
     angle = QuantityDelegator(out_unit=rad)
@@ -122,29 +126,20 @@ class GenericQuantity(Delegating, tp.Generic[_T]):
     def to(self, unit: Unit = None, *args, **kwargs):
         if hasattr(super(), 'to'):
             with self.delegator_context:
-                ret = super().to(*args, **kwargs)
+                ret = self._T.to(self, *args, **kwargs)
         else:
             ret = self
 
         if self.unit == unit:
-            return self._fill_quantity(ret)
+            return self._meta_update(ret)
         if unit is not None:
             if ret.unit is not None:
-                with self.unitless_context(ret.clone() if ret is self else ret) as ret:
+                ret = ret._T.clone(ret) if ret is self else ret
+                with ret.delegator_context:
                     # TODO: better handling of float()...
                     ret *= float(self.unit.to(unit))
-            ret.unit = unit
+            return self._meta_update(ret, unit=unit)
         return ret
-
-    def clone(self, *args, **kwargs) -> 'GenericQuantity':
-        return super().clone(*args, **kwargs)
-
-    @contextlib.contextmanager
-    def unitless_context(self, clone=None):
-        clone = clone if clone is not None else self.clone()
-        clone.__class__ = self._T
-        yield clone
-        clone.__class__ = type(self)
 
 
 class UnitFuncType(Enum):
