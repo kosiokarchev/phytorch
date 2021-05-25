@@ -9,7 +9,7 @@ from .delegation.delegating import Delegating
 from .delegation.quantity_delegators import PowerDelegator, ProductDelegator, QuantityDelegator
 from ..meta import Meta
 from ..units.angular import rad
-from ..units.Unit import Unit
+from ..units.Unit import Unit, ValueProtocol
 
 
 _tt = TypeVar('_tt')
@@ -25,7 +25,7 @@ class QuantityBackendProtocol(Protocol):
 _t = TypeVar('_t', Type[QuantityBackendProtocol], type)
 
 
-class GenericQuantity(Delegating[_t], Meta):
+class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
     unit: Meta.meta_attribute(Unit) = None
     _T: Union[Type[QuantityBackendProtocol], Type]
 

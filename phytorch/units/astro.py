@@ -3,9 +3,9 @@ from fractions import Fraction
 from ._prefixes import _prefix_many_to_many
 from ._utils import register_unit_map, unpack_and_name
 from .angular import arcsec
-from .si.additional import AU, day
-from .si.base import m
-from .si.coherent import Hz, Pa, W
+from ._si.additional import AU, day
+from ._si.base import m
+from ._si.coherent import Hz, Pa, W
 from ..constants import atm, c, h, Ryd
 
 

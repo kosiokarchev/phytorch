@@ -11,8 +11,8 @@ class Constant(Unit):
 
     def __init__(self, name, unit: Union[Unit, Real], description=''):
         if not isinstance(unit, Unit):
-            unit = Unit(scale=unit)
-        super().__init__(unit, scale=unit.scale, name=name)
+            unit = Unit(value=unit)
+        super().__init__(unit, value=unit.value, name=name)
         self.unit_name = unit.name
         self.description = description
 

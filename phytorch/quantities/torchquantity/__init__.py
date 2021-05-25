@@ -25,7 +25,7 @@ class TorchQuantity(GenericQuantity[Tensor], Tensor):
         return (
             args.to(unit=unit) if isinstance(args, GenericQuantity)
             # TODO: Nasty hack: https://github.com/pytorch/pytorch/issues/54983
-            else args / float(unit.scale) if (strict and isinstance(args, (Real, Tensor)))
+            else args / float(unit.value) if (strict and isinstance(args, (Real, Tensor)))
             else args if (isinstance(args, (str, torch.Size, Tensor, np.ndarray, tp.Iterator))
                           or not isinstance(args, tp.Iterable))
             else type(args)(cls._to(a, unit, strict=strict) for a in args))

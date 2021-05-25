@@ -1,9 +1,11 @@
-import typing as tp
+from __future__ import annotations
+
 from decimal import Decimal
 from fractions import Fraction
 from itertools import chain
 from numbers import Number, Rational, Real
 from operator import add, mul, neg
+from typing import Any, Callable, Generic, ItemsView, Iterable, Type, TypeVar, Union
 
 
 class Dimension(str):
@@ -13,17 +15,17 @@ class Dimension(str):
 LENGTH, TIME, MASS, CURRENT, TEMPERATURE = map(Dimension, ('L', 'T', 'M', 'I', 'Θ'))  # type: Dimension
 
 
-_T = tp.TypeVar('_T')
-_bop = tp.Callable[[_T, _T], _T]
-_mop = tp.Callable[..., _T]
+_T = TypeVar('_T')
+_bop = Callable[[_T, _T], _T]
+_mop = Callable[..., _T]
 
-_fractionable = tp.Union[Rational, int, float, Decimal, str]
+_fractionable = Union[Rational, int, float, Decimal, str]
 
 
 class UnitBase(dict):
     # TODO: PyCharm bug https://youtrack.jetbrains.com/issue/PY-38897
     @classmethod
-    def _make(cls, iterable: tp.Union[tp.Iterable[tp.Tuple[Dimension, _fractionable]], tp.ItemsView[Dimension, _fractionable]], **kwargs):
+    def _make(cls, iterable: Union[Iterable[tuple[Dimension, _fractionable]], ItemsView[Dimension, _fractionable]], **kwargs):
         return cls(((key, val) for key, val in iterable for val in [Fraction(val).limit_denominator()] if val != 0), **kwargs)
 
     def __missing__(self, key: Dimension):
@@ -72,8 +74,8 @@ class UnitBase(dict):
     __rmod__ = __rtruediv__
 
 
-class EqualityWrapper(tp.Generic[_T]):
-    def __init__(self, wrapped: _T, cls: tp.Type[_T]):
+class EqualityWrapper(Generic[_T]):
+    def __init__(self, wrapped: _T, cls: Type[_T]):
         self.wrapped = wrapped
         self.cls = cls
 
@@ -87,10 +89,14 @@ class EqualityWrapper(tp.Generic[_T]):
         return self.cls.__str__(self.wrapped)
 
 
-class Unit(UnitBase):
-    def __init__(self, *args, scale: Real = Fraction(1), name=None, **kwargs):
+class ValueProtocol:
+    value: Union[Number, Any]
+
+
+class Unit(UnitBase, ValueProtocol):
+    def __init__(self, *args, value: Real = Fraction(1), name=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.scale = scale
+        self.value = value
         self.name = name
 
         self.dimension = EqualityWrapper(self, UnitBase)
@@ -99,13 +105,13 @@ class Unit(UnitBase):
         self.name = name
         return self
 
-    def to(self, other: 'Unit'):
+    def to(self, other: Unit):
         if self.dimension != other.dimension:
             raise TypeError(f'Cannot convert {self}, aka {self.dimension}, to {other}, aka {other.dimension}')
-        return self.scale / other.scale
+        return self.value / other.value
 
     def __str__(self):
-        return self.name or f'{self.scale} x {super().__str__()}'
+        return self.name or f'{self.value} x {super().__str__()}'
 
     @property
     def bracketed_name(self):
@@ -113,18 +119,18 @@ class Unit(UnitBase):
         return f'({s})' if ' ' in s else s
 
     def __invert__(self, **kwargs):
-        return super().__invert__(scale=1/self.scale, name=f'{self.bracketed_name}^(-1)', **kwargs)
+        return super().__invert__(scale=1/self.value, name=f'{self.bracketed_name}^(-1)', **kwargs)
 
     def __pow__(self, power: _fractionable, modulo=None, **kwargs):
-        return super().__pow__(power, modulo, scale=self.scale**power, name=f'{self.bracketed_name}^({Fraction(power).limit_denominator()})', **kwargs)
+        return super().__pow__(power, modulo, scale=self.value**power, name=f'{self.bracketed_name}^({Fraction(power).limit_denominator()})', **kwargs)
 
     def __mul__(self, other, **kwargs):
         if isinstance(other, Unit):
-            return super().__mul__(other, scale=self.scale * other.scale, name=f'{self!s} {other!s}',  **kwargs)
+            return super().__mul__(other, scale=self.value * other.value, name=f'{self!s} {other!s}', **kwargs)
         elif isinstance(other, Real):
-            return self._make(self.items(), scale=self.scale * other, name=f'{other!s} {Unit.__str__(self)}', **kwargs)
+            return self._make(self.items(), scale=self.value * other, name=f'{other!s} {Unit.__str__(self)}', **kwargs)
         else:
             return NotImplemented
 
     def __eq__(self, other):
-        return isinstance(other, Unit) and self.scale == other.scale and super().__eq__(other)
+        return isinstance(other, Unit) and self.value == other.value and super().__eq__(other)
