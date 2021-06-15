@@ -29,7 +29,8 @@ class Meta(ABC):
         self = super().__new__(cls, *args, **kwargs)
         return self._meta_update(self, **meta_kwargs)
 
-    @staticmethod
-    def _meta_update(other: Meta, /, **kwargs):
-        consume(setattr(other, key, kwargs[key]) for key in other._meta_attributes if key in kwargs)
+    def _meta_update(self, other: Meta, /, **kwargs):
+        if isinstance(other, type(self)):
+            consume(setattr(other, key, kwargs[key])
+                    for key in other._meta_attributes if key in kwargs)
         return other

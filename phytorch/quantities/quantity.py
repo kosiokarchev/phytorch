@@ -33,7 +33,9 @@ class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
         if unit is not False:
             kwargs['unit'] = unit(self.unit) if callable(unit) else unit if isinstance(unit, Unit) else self.unit
         return super()._meta_update(
-            other if isinstance(other, type(self)) else self._T.as_subclass(other, type(self)),
+            other if isinstance(other, type(self)) else
+            self._T.as_subclass(other, type(self)) if isinstance(other, self._T)
+            else other,
             **kwargs)
 
     def __repr__(self):

@@ -31,7 +31,7 @@ class UnitBase(dict):
     def __missing__(self, key: Dimension):
         assert isinstance(key, Dimension),\
             f'Units can be indexed only by {Dimension.__name__} instances, '\
-            'got {key} ({type(key)})'
+            f'got {key} ({type(key)})'
         return self.get(key, Fraction())
 
     def __repr__(self):
@@ -119,16 +119,16 @@ class Unit(UnitBase, ValueProtocol):
         return f'({s})' if ' ' in s else s
 
     def __invert__(self, **kwargs):
-        return super().__invert__(scale=1/self.value, name=f'{self.bracketed_name}^(-1)', **kwargs)
+        return super().__invert__(value=1/self.value, name=f'{self.bracketed_name}^(-1)', **kwargs)
 
     def __pow__(self, power: _fractionable, modulo=None, **kwargs):
-        return super().__pow__(power, modulo, scale=self.value**power, name=f'{self.bracketed_name}^({Fraction(power).limit_denominator()})', **kwargs)
+        return super().__pow__(power, modulo, value=self.value**power, name=f'{self.bracketed_name}^({Fraction(power).limit_denominator()})', **kwargs)
 
     def __mul__(self, other, **kwargs):
         if isinstance(other, Unit):
-            return super().__mul__(other, scale=self.value * other.value, name=f'{self!s} {other!s}', **kwargs)
+            return super().__mul__(other, value=self.value * other.value, name=f'{self!s} {other!s}', **kwargs)
         elif isinstance(other, Real):
-            return self._make(self.items(), scale=self.value * other, name=f'{other!s} {Unit.__str__(self)}', **kwargs)
+            return self._make(self.items(), value=self.value * other, name=f'{other!s} {Unit.__str__(self)}', **kwargs)
         else:
             return NotImplemented
 

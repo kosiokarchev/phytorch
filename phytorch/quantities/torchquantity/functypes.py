@@ -53,7 +53,8 @@ TORCH_FUNCTYPES_H = {
     UnitFuncType.NOUNIT: {
         Tensor.__repr__, Tensor.__dir__, Tensor.storage, Tensor.tolist,
         Tensor.new, Tensor.new_tensor, Tensor.new_full, Tensor.new_ones,
-        Tensor.new_zeros, Tensor.new_empty
+        Tensor.new_zeros, Tensor.new_empty,
+        Tensor.__reduce__, Tensor.__reduce_ex__
     },
     UnitFuncType.SAME: {
         Tensor.requires_grad_, Tensor.to, Tensor.expand
