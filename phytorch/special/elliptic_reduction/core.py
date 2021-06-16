@@ -1,14 +1,11 @@
 from dataclasses import dataclass
 from functools import cache, cached_property
-from typing import Sequence, TypeVar, Union
+from typing import Callable, ClassVar, Generic, Sequence, Union
 
 from more_itertools import always_iterable
-# from mpmath import elliprc, elliprf, elliprj, elliprd
-from phytorch.special import elliprf, elliprc, elliprj, elliprd
 
-
-_T = TypeVar('_T')
-_t = float
+from ...special import ellipr as _ellipr
+from ...utils._typing import _T
 
 
 @dataclass(frozen=True)
@@ -23,7 +20,7 @@ class OneIndexedSequence(Sequence[_T]):
 
 
 @dataclass(frozen=True)
-class OneIndexedFormula:
+class OneIndexedFormula(Generic[_T]):
     a: OneIndexedSequence[_T]
     b: OneIndexedSequence[_T]
 
@@ -49,16 +46,21 @@ class XorY(OneIndexedFormula):
     def formula(self, i):
         return 1 if i == 0 else (self.a[i] + self.b[i]*self.xory)**0.5
 
-    xory: _t
+    xory: _T
 
 
 @dataclass(unsafe_hash=True)
 class EllipticReduction:
-    x: _t
-    y: _t
-    a: Union[OneIndexedSequence[_t], Sequence[_t]]
-    b: Union[OneIndexedSequence[_t], Sequence[_t]]
+    x: _T
+    y: _T
+    a: Union[OneIndexedSequence[_T], Sequence[_T]]
+    b: Union[OneIndexedSequence[_T], Sequence[_T]]
     h: int = 4
+
+    elliprc: ClassVar[Callable[[_T, _T], _T]] = _ellipr.elliprc
+    elliprd: ClassVar[Callable[[_T, _T, _T], _T]] = _ellipr.elliprd
+    elliprf: ClassVar[Callable[[_T, _T, _T], _T]] = _ellipr.elliprf
+    elliprj: ClassVar[Callable[[_T, _T, _T, _T], _T]] = _ellipr.elliprj
 
     @cached_property
     def n(self):
@@ -115,19 +117,18 @@ class EllipticReduction:
             raise ValueError(f'-{self.n} <= i <= {self.n}')
         if i < -self.h:
             i, j, k, l, nu = (1, 2, 3, 4, -i)
-            return (2 * self.b[nu] * (self.d[i, j]*self.d[i, k]*self.d[i, l] / self.d[i, nu] / 3 * elliprj(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3), self.U2nu(i, nu)) + elliprc(self.S2(i, nu), self.Q2(i, nu))) - self.b[i]*self.Ie(0)) / self.d[i, nu]
+            return (2 * self.b[nu] * (self.d[i, j]*self.d[i, k]*self.d[i, l] / self.d[i, nu] / 3 * self.elliprj(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3), self.U2nu(i, nu)) + self.elliprc(self.S2(i, nu), self.Q2(i, nu))) - self.b[i]*self.Ie(0)) / self.d[i, nu]
         elif i < 0:
             i = -i
             j, k, l = {1, 2, 3, 4} - {i}
-            return (2*self.b[i] * (self.d[j, k]*self.d[j, l]/3 * elliprd(self.U2(i, k), self.U2(j, k), self.U2(i, j)) + self.X[j]*self.Y[j] / (self.X[i]*self.Y[i]*self.U2(i, j)**0.5)) - self.b[j] * self.Ie(0)) / self.d[j, i]
+            return (2*self.b[i] * (self.d[j, k]*self.d[j, l]/3 * self.elliprd(self.U2(i, k), self.U2(j, k), self.U2(i, j)) + self.X[j]*self.Y[j] / (self.X[i]*self.Y[i]*self.U2(i, j)**0.5)) - self.b[j] * self.Ie(0)) / self.d[j, i]
         elif i==0:
-            return 2*elliprf(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3))
+            return 2*self.elliprf(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3))
         elif i <= self.h:
             j, k, l = {1, 2, 3, 4} - {i}
             return 2 * (
-                self.d[i, j] * self.d[i, k] * self.d[l, i] * elliprj(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3), self.U2nu(i, 0)) / 3 / self.b[i]
-                + elliprc(self.S2(i, 0), self.Q2(i, 0))
+                self.d[i, j] * self.d[i, k] * self.d[l, i] * self.elliprj(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3), self.U2nu(i, 0)) / 3 / self.b[i]
+                + self.elliprc(self.S2(i, 0), self.Q2(i, 0))
             )
         elif i <= self.n:
             return (self.b[i] * self.Ie(1) + self.d[i, 1] * self.Ie(0)) / self.b[1]
-
