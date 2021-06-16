@@ -18,6 +18,9 @@ class OneIndexedSequence(Sequence[_T]):
     def __getitem__(self, item):
         return self.seq[item-1]
 
+    def __iter__(self):
+        return iter(self.seq)
+
 
 @dataclass(frozen=True)
 class OneIndexedFormula(Generic[_T]):
@@ -57,10 +60,10 @@ class EllipticReduction:
     b: Union[OneIndexedSequence[_T], Sequence[_T]]
     h: int = 4
 
-    elliprc: ClassVar[Callable[[_T, _T], _T]] = _ellipr.elliprc
-    elliprd: ClassVar[Callable[[_T, _T, _T], _T]] = _ellipr.elliprd
-    elliprf: ClassVar[Callable[[_T, _T, _T], _T]] = _ellipr.elliprf
-    elliprj: ClassVar[Callable[[_T, _T, _T, _T], _T]] = _ellipr.elliprj
+    elliprc: ClassVar[Callable[[_T, _T], _T]] = staticmethod(_ellipr.elliprc)
+    elliprd: ClassVar[Callable[[_T, _T, _T], _T]] = staticmethod(_ellipr.elliprd)
+    elliprf: ClassVar[Callable[[_T, _T, _T], _T]] = staticmethod(_ellipr.elliprf)
+    elliprj: ClassVar[Callable[[_T, _T, _T, _T], _T]] = staticmethod(_ellipr.elliprj)
 
     @cached_property
     def n(self):
@@ -117,7 +120,12 @@ class EllipticReduction:
             raise ValueError(f'-{self.n} <= i <= {self.n}')
         if i < -self.h:
             i, j, k, l, nu = (1, 2, 3, 4, -i)
-            return (2 * self.b[nu] * (self.d[i, j]*self.d[i, k]*self.d[i, l] / self.d[i, nu] / 3 * self.elliprj(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3), self.U2nu(i, nu)) + self.elliprc(self.S2(i, nu), self.Q2(i, nu))) - self.b[i]*self.Ie(0)) / self.d[i, nu]
+            return (
+                2 * self.b[nu] * (
+                    self.d[i, j]*self.d[i, k]*self.d[i, l] / self.d[i, nu] / 3 * self.elliprj(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3), self.U2nu(i, nu))
+                    + self.elliprc(self.S2(i, nu), self.Q2(i, nu))
+                ) - self.b[i] * self.Ie(0)
+            ) / self.d[i, nu]
         elif i < 0:
             i = -i
             j, k, l = {1, 2, 3, 4} - {i}

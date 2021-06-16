@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import Callable, Sequence
+from typing import Callable, Iterable
 
 import sympy as sym
 import torch
@@ -13,15 +13,15 @@ from ...utils._typing import _T
 
 
 class SymbolicEllipticReduction(EllipticReduction):
-    elliprc = implemented_function('R_C', EllipticReduction.elliprc)
-    elliprd = implemented_function('R_D', EllipticReduction.elliprd)
-    elliprf = implemented_function('R_F', EllipticReduction.elliprf)
-    elliprj = implemented_function('R_J', EllipticReduction.elliprj)
+    elliprc = staticmethod(implemented_function('R_C', EllipticReduction.elliprc))
+    elliprd = staticmethod(implemented_function('R_D', EllipticReduction.elliprd))
+    elliprf = staticmethod(implemented_function('R_F', EllipticReduction.elliprf))
+    elliprj = staticmethod(implemented_function('R_J', EllipticReduction.elliprj))
 
     @classmethod
     @cache
-    def get(cls, n, h):
-        return cls(n, h)
+    def get(cls, n: int, h: int) -> SymbolicEllipticReduction:
+        return cls(n=n, h=h)
 
     def __init__(self, n=4, h=4):
         super().__init__(
@@ -31,6 +31,6 @@ class SymbolicEllipticReduction(EllipticReduction):
         )
 
     @cache
-    def Ie(self, i: int) -> Callable[[Sequence[_T], Sequence[_T], tuple[_T, _T]], _T]:
-        return sym.lambdify([self.a, self.b, (self.y, self.x)], super().Ie(i),
+    def desymbolise(self, expr: sym.Expr) -> Callable[[Iterable[_T], Iterable[_T], tuple[_T, _T]], _T]:
+        return sym.lambdify([self.a, self.b, (self.y, self.x)], expr,
                             modules=[{'sqrt': lambda x: x**0.5}, torch])
