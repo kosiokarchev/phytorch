@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from decimal import Decimal
 from fractions import Fraction
 from itertools import chain
-from numbers import Number, Rational, Real
+from numbers import Number, Real
 from operator import add, mul, neg
-from typing import Any, Callable, Generic, ItemsView, Iterable, Type, TypeVar, Union
+from typing import Generic, ItemsView, Iterable, Type, Union
+
+from ..utils._typing import _bop, _fractionable, _mop, _T, ValueProtocol
 
 
 class Dimension(str):
@@ -13,13 +14,6 @@ class Dimension(str):
 
 
 LENGTH, TIME, MASS, CURRENT, TEMPERATURE = map(Dimension, ('L', 'T', 'M', 'I', 'Θ'))  # type: Dimension
-
-
-_T = TypeVar('_T')
-_bop = Callable[[_T, _T], _T]
-_mop = Callable[..., _T]
-
-_fractionable = Union[Rational, int, float, Decimal, str]
 
 
 class UnitBase(dict):
@@ -87,10 +81,6 @@ class EqualityWrapper(Generic[_T]):
 
     def __str__(self):
         return self.cls.__str__(self.wrapped)
-
-
-class ValueProtocol:
-    value: Union[Number, Any]
 
 
 class Unit(UnitBase, ValueProtocol):

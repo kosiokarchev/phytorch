@@ -9,7 +9,8 @@ from .delegation.delegating import Delegating
 from .delegation.quantity_delegators import PowerDelegator, ProductDelegator, QuantityDelegator
 from ..meta import Meta
 from ..units.angular import rad
-from ..units.Unit import Unit, ValueProtocol
+from ..units.Unit import Unit
+from ..utils._typing import ValueProtocol
 
 
 _tt = TypeVar('_tt')

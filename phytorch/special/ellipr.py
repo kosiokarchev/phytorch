@@ -5,13 +5,15 @@ from torch import Tensor
 from torch.autograd import Function
 
 from ..extensions import ellipr as _ellipr
+from ..utils._typing import _TN
+from ..utils.complex import with_complex_args
 from ..utils.function_context import TorchFunctionContext
 
 
 # noinspection PyMethodOverriding
 class Elliprf(Function):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: Tensor, y: Tensor, z: Tensor) -> Tensor:
+    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: Tensor) -> Tensor:
         ctx.set_materialize_grads(False)
         ctx.save_for_backward(x, y, z)
         return _ellipr.elliprf(x, y, z)
@@ -27,40 +29,38 @@ class Elliprf(Function):
 # noinspection PyMethodOverriding,PyAbstractClass
 class Elliprj(Function):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: Tensor, y: Tensor, z: Tensor, p: Tensor) -> Tensor:
-        ret = _ellipr.elliprj(x, y, z, p)
-        ctx.mark_non_differentiable(ret)
+    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN, p: Tensor) -> Tensor:
+        ctx.mark_non_differentiable(
+            ret := _ellipr.elliprj(x, y, z, p))
         return ret
 
 
 # noinspection PyMethodOverriding,PyAbstractClass
 class Elliprd(Function):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: Tensor, y: Tensor, z: Tensor) -> Tensor:
-        ret = _ellipr.elliprd(x, y, z)
-        ctx.mark_non_differentiable(ret)
+    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
+        ctx.mark_non_differentiable(
+            ret := _ellipr.elliprd(x, y, z))
         return ret
 
 
 # noinspection PyMethodOverriding,PyAbstractClass
 class Elliprg(Function):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: Tensor, y: Tensor, z: Tensor) -> Tensor:
-        ret = _ellipr.elliprg(x, y, z)
-        ctx.mark_non_differentiable(ret)
+    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
+        ctx.mark_non_differentiable(
+            ret := _ellipr.elliprg(x, y, z))
         return ret
 
 
-elliprf = Elliprf.apply
-elliprj = Elliprj.apply
-elliprd = Elliprd.apply
-elliprg = Elliprg.apply
+funcs = {E.__name__.lower(): E for E in (Elliprd, Elliprf, Elliprg, Elliprj)}
+globals().update({key: with_complex_args(val.apply) for key, val in funcs.items()})
 
 
-def elliprc(x: Tensor, y: Tensor) -> Tensor:
+def elliprc(x: _TN, y: _TN) -> Tensor:
     # TODO: Can we do better? There's a kernel, but then still we only get one
     #  automatic gradient. There's an "easy" expression, but it has cases.
     return elliprf(x, y, y)
 
 
-__all__ = 'elliprf', 'elliprc', 'elliprj', 'elliprd', 'elliprg'
+__all__ = tuple(funcs.keys()) + ('elliprc',)

@@ -6,7 +6,8 @@ from typing import Optional, Sequence
 import torch
 from torch import Tensor
 
-from ..utils.complex import complex_typemap
+from ..utils._typing import _TN
+from ..utils.complex import with_complex_args
 from ..utils.function_context import TorchFunctionContext
 
 
@@ -20,10 +21,10 @@ def vieta(rts: Sequence[Tensor]) -> Sequence[Tensor]:
     )]
 
 
-def companion_matrix(p: Tensor) -> Tensor:
+def companion_matrix(*coeffs: Tensor) -> Tensor:
     return torch.cat((
-        -p.unsqueeze(-2),
-        torch.eye(p.shape[-1]-1, p.shape[-1]).unsqueeze(-3).unflatten(0, *p.shape[:-1])
+        - (p := torch.stack(torch.broadcast_tensors(*coeffs), -1).unsqueeze(-2)),
+        torch.eye(len(coeffs) - 1, len(coeffs)).expand(*p.shape[:-2], len(coeffs) - 1, len(coeffs))
     ), -2)
 
 
@@ -40,22 +41,19 @@ class Roots(torch.autograd.Function):
     _rootfuncs = {2: _roots.roots2, 3: _roots.roots3, 4: _roots.roots4}
 
     @staticmethod
-    def forward(ctx: TorchFunctionContext, *coeffs: Tensor) -> tuple[Tensor, ...]:
+    def _roots_via_companion(*coeffs: Tensor):
+        return torch.linalg.eigvals(companion_matrix(*coeffs))
+
+    @staticmethod
+    def forward(ctx: TorchFunctionContext, *coeffs: _TN) -> tuple[Tensor, ...]:
         n = len(coeffs)
         if n == 0:
             raise ValueError('At least 2 coefficients are needed.')
         if n == 1:
             raise NotImplementedError('You already have the answer...')
-        if 2 <= n <= 4:
-            rts = (Roots._rootfuncs[len(coeffs)])(*(c.type(complex_typemap.get(c.dtype, c.dtype)) for c in coeffs))
-        else:
-            assert not any(len(c.shape) > 1 for c in coeffs),\
-                'PyTorch does not support batched general eigenvalue calculation,'\
-                'which is needed for general root finding.'
-            rts = companion_matrix(torch.stack(torch.broadcast_tensors(coeffs), -1)).eig(eigenvectors=False).eigenvalues
-            if not torch.is_complex(rts):
-                rts = torch.complex(*rts.movedim(-1, 0))
-        ctx.save_for_backward(*rts)
+        ctx.save_for_backward(*(
+            rts := Roots._rootfuncs.get(n, Roots._roots_via_companion)(*coeffs)
+        ))
         return rts
 
     @staticmethod
@@ -68,6 +66,6 @@ class Roots(torch.autograd.Function):
         return (grads.conj() * torch.stack(grad_outputs)).sum(1).unbind(0)
 
 
-roots = Roots.apply
+roots = with_complex_args(Roots.apply)
 
 __all__ = 'vieta', 'companion_matrix', 'roots'
