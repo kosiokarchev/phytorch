@@ -1,11 +1,18 @@
 from dataclasses import dataclass
-from functools import cache, cached_property
-from typing import Callable, ClassVar, Generic, Sequence, Union
+from functools import cache, cached_property, reduce
+from math import factorial
+from operator import mul
+from typing import Callable, ClassVar, Generic, Iterable, Sequence, Union
 
 from more_itertools import always_iterable
 
 from ...special import ellipr as _ellipr
 from ...utils._typing import _T
+from ...utils.symmetry import elementary_symmetric, partitions, product, sign
+
+
+def onerange(end):
+    return range(1, end+1)
 
 
 @dataclass(frozen=True)
@@ -140,3 +147,104 @@ class EllipticReduction:
             )
         elif i <= self.n:
             return (self.b[i] * self.Ie(1) + self.d[i, 1] * self.Ie(0)) / self.b[1]
+
+    @cache
+    def sigma(self, p, j=0):
+        # (3.3), (3.4)
+        return (
+            reduce(mul, (self.b[i] for i in onerange(self.h))) if p==0 else
+            self.sigma(0) * elementary_symmetric(p, [self.d[i, j] / self.b[i] for i in onerange(self.h)])
+        )
+
+    def v(self, m: Iterable[int], z):
+        # (3.2)
+        return product(
+            (self.a[i] + self.b[i] * z) ** (_m - (i <= self.h) * (1/2))
+            for i, _m in zip(onerange(self.n), m)
+        )
+
+    @cache
+    def vx(self, m: Iterable[int]):
+        # (3.2)
+        return self.v(m, self.x)
+
+    @cache
+    def vy(self, m: Iterable[int]):
+        # (3.2)
+        return - self.v(m, self.y)
+
+    @cache
+    def A(self, m: Iterable[int]):
+        # (3.1)
+        return self.vx(m) + self.vy(m)
+
+    @cache
+    def _Iqe_pref(self, q: int, r: int, j: int):
+        return (q + r / 2 + 1) * self.sigma(self.h - r, j)
+
+    @cache
+    def Iqe(self, q: int, j: int):
+        # (3.5) and see paragraph after proof
+        if q > 1:
+            ri = self.h
+            low = 0 if j > self.h else 1
+            high = self.h
+        elif q < -1:
+            if j > self.h:
+                ri = 0
+                low = 1
+            else:
+                ri = 1
+                low = 2
+            high = self.h+1
+        else:
+            return self.Ie(q*j)
+
+        q = q - ri
+        return (
+            self.b[j]**(self.h-1) * self.A(tuple((i<=self.h) + (q+1) * (i == j) for i in onerange(self.n)))
+            - sum(self._Iqe_pref(q, r, j) * self.Iqe(q+r, j) for r in range(low, high))
+        ) / self._Iqe_pref(q, ri, j)
+
+    @cache
+    def B(self, m: Iterable[int]):
+        # (2.5)
+        return product(bj ** mj for bj, mj in zip(self.b, m))
+
+    @cache
+    def D(self, m: OneIndexedSequence[int], i: int):
+        # (2.5)
+        return product(self.d[j, i] ** m[j] for j in onerange(self.n) if j != i)
+
+    @cache
+    def mu(self, m: OneIndexedSequence[int], s: int, i: int):
+        # (2.6)
+        return (-1 / abs(s) * sum(
+            m[j] * (self.d[i, j] / self.b[j])**s
+            for j in onerange(self.n) if j != i
+        ))
+
+    @cache
+    def C(self, m: OneIndexedSequence[int], s: int, i: int):
+        # (2.7)
+        return 1 if s==0 else sum(
+            product(self.mu(m, ss*v, i)**c / factorial(c) for v, c in part)
+            for ss in [sign(s)]
+            for part in partitions(abs(s))
+        )
+
+    @cache
+    def Im(self, m: Sequence[int]):
+        i0 = 1
+        M = sum(m)
+        m = OneIndexedSequence(m)
+        return (
+            self.B(m) * self.b[i0]**(-M) * sum(self.C(m, M-q, i0) * self.Iqe(q, i0) for q in range(0, M+1))
+            + sum(
+                self.D(m, i) * self.b[i]**(m[i]-M) * sum(
+                    self.C(m, m[i]+q, i) * self.Iqe(-q, i)
+                    for q in onerange(-m[i])
+                )
+                for i in onerange(self.n)
+            )
+        )

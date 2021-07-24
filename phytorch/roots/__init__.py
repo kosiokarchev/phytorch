@@ -1,6 +1,4 @@
-from functools import partial, reduce
 from itertools import combinations
-from operator import mul
 from typing import Optional, Sequence
 
 import torch
@@ -9,14 +7,12 @@ from torch import Tensor
 from ..utils._typing import _TN
 from ..utils.complex import with_complex_args
 from ..utils.function_context import TorchFunctionContext
-
-
-product = partial(reduce, mul)
+from ..utils.symmetry import elementary_symmetric
 
 
 def vieta(rts: Sequence[Tensor]) -> Sequence[Tensor]:
     return [torch.ones_like(rts[0]), *(
-        (-1)**k * sum(map(product, combinations(rts, k)))
+        (-1)**k * elementary_symmetric(k, rts)
         for k in range(1, len(rts) + 1)
     )]
 
