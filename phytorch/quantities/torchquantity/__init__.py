@@ -13,7 +13,11 @@ from ..quantity import GenericQuantity, UnitFuncType
 from ...units.Unit import Unit
 
 
-class TorchQuantity(GenericQuantity[Tensor], Tensor):
+class TorchQuantityMeta(type(GenericQuantity), type(Tensor)):
+    pass
+
+
+class TorchQuantity(GenericQuantity[Tensor], Tensor, metaclass=TorchQuantityMeta):
     def __new__(cls, *args, unit: Unit, **kwargs):
         return super().__new__(cls, *args, unit=unit, **kwargs)
 
