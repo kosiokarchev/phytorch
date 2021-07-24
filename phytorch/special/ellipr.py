@@ -64,3 +64,5 @@ def elliprc(x: _TN, y: _TN) -> Tensor:
 
 
 __all__ = tuple(funcs.keys()) + ('elliprc',)
+
+# TODO: unsafe flag for elliprj
