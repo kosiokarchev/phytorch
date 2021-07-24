@@ -1,11 +1,13 @@
-from functools import update_wrapper
 from itertools import combinations, permutations
 from math import log, pi
 
 import torch
-from hypothesis import assume, given, strategies as st
+from hypothesis import assume, given
 
 from phytorch.special.ellipr import elliprc, elliprd, elliprf, elliprg, elliprj
+from tests.common import (close_complex_nan, n_complex_tensors_strategy, n_tensors_strategy, process_cases,
+                          with_default_double,
+                          CLOSE_KWARGS)
 
 
 # From Carlson (1995) except where stated otherwise
@@ -61,29 +63,11 @@ cases = {
 }
 
 
-def with_default_double(func):
-    def f(*args, **kwargs):
-        default_dtype = torch.get_default_dtype()
-        torch.set_default_dtype(torch.double)
-        ret = func(*args, **kwargs)
-        torch.set_default_dtype(default_dtype)
-        return ret
-    return update_wrapper(f, func)
-
-
-CLOSE_KWARGS = dict(atol=1e-6, rtol=1e-6)
-
-
 @with_default_double
 def test_ellipr():
     for func, vals in cases.items():
-        ins, outs = map(torch.tensor, zip(*vals))
-        res = func(*ins.T)
-        isclose = torch.isclose(res, outs, **CLOSE_KWARGS)
-        if not isclose.all().item():
-            print(func, isclose)
-            print(ins[~isclose], res[~isclose], outs[~isclose])
-        assert isclose.all()
+        ins, outs, res = process_cases(func, vals)
+        assert torch.allclose(outs, res, **CLOSE_KWARGS)
 
 
 # from mpmath; Carlson's algorithm is not guaranteed, so mpmath integrates numerically
@@ -106,27 +90,12 @@ def test_elliprj_fail():
     assert elliprj(*torch.tensor(next(zip(*cases_elliprj_fail))).T).real.isnan().all()
 
 
-def allclose_complex_nan(a, b, **kwargs):
-    return all(torch.allclose(acc(a), acc(b), **{**CLOSE_KWARGS, 'equal_nan': True, **kwargs})
-                for acc in (torch.abs, torch.angle))
-
-
-def n_tensors_strategy(n, elements: st.SearchStrategy = st.floats(min_value=1e-4, max_value=1e3), max_len=10):
-    return st.integers(min_value=1, max_value=max_len).flatmap(lambda m: st.tuples(*(
-        st.lists(elements, min_size=m, max_size=m) for i in range(n)
-    ))).map(torch.tensor)
-
-
-def n_complex_tensors_strategy(n, max_len=10, min_magnitude=1e-4, max_magnitude=1e3):
-    return n_tensors_strategy(n, st.complex_numbers(min_magnitude=min_magnitude, max_magnitude=max_magnitude), max_len=max_len)
-
-
 def make_symmetry_tester(func, nsym: int, nadd: int = 0):
     @with_default_double
     @given(args=n_complex_tensors_strategy(nsym + nadd))
     def test_symmetry(args: torch.Tensor):
         assert all(
-            allclose_complex_nan(f1, f2)
+            close_complex_nan(f1, f2)
             for f1, f2 in combinations((func(*arg, *args[nsym:]) for arg in permutations(args[:nsym])), 2)
         )
     return test_symmetry
@@ -142,8 +111,8 @@ test_symmetry_elliprj = make_symmetry_tester(elliprj, 3, 1)
 @given(xyz=n_complex_tensors_strategy(3))
 def test_definitions(xyz):
     x, y, z = xyz
-    assert allclose_complex_nan(elliprc(x, y), elliprf(x, y, y))
-    assert allclose_complex_nan(elliprd(x, y, z), elliprj(x, y, z, z))
+    assert close_complex_nan(elliprc(x, y), elliprf(x, y, y))
+    assert close_complex_nan(elliprd(x, y, z), elliprj(x, y, z, z))
 
 
 @with_default_double
@@ -153,7 +122,7 @@ def test_consistency_3_1(xy_lrli: torch.Tensor):
     lbda = torch.complex(lr, li)
     assume(not (lbda == 0).any())
     mu = x * y / lbda
-    assert allclose_complex_nan(
+    assert close_complex_nan(
         elliprf(x+lbda, y+lbda, lbda) + elliprf(x+mu, y+mu, mu),
         elliprf(x, y, 0)
     )
@@ -166,7 +135,7 @@ def test_consistency_3_2(x_lrli: torch.Tensor):
     lbda = torch.complex(lr, li)
     assume(not (lbda == 0).any())
     mu = x * x / lbda
-    assert allclose_complex_nan(
+    assert close_complex_nan(
         elliprc(lbda, x+lbda) + elliprc(mu, x+mu),
         elliprc(0, x)
     )
@@ -180,7 +149,7 @@ def test_consistency_3_3(xyp_lrli: torch.Tensor):
     assume(not (lbda == 0).any())
     mu = x * y / lbda
 
-    assert allclose_complex_nan(
+    assert close_complex_nan(
         elliprj(x+lbda, y+lbda, lbda, p+lbda) + elliprj(x+mu, y+mu, mu, p+mu),
         elliprj(x, y, 0, p) - 3*elliprc(p**2 * (lbda + mu + x + y), p * (p+lbda) * (p+mu)),
         rtol=1e-4, atol=1e-4)
@@ -193,7 +162,7 @@ def test_consistency_3_5(xy_lrli: torch.Tensor):
     lbda = torch.complex(lr, li)
     assume(not (lbda == 0).any())
     mu = x * y / lbda
-    assert allclose_complex_nan(
+    assert close_complex_nan(
         elliprd(lbda, x+lbda, y+lbda) + elliprd(mu, x+mu, y+mu),
         elliprd(0, x, y) - 3 / (y * (x+y + lbda + mu)**0.5)
     )
@@ -203,7 +172,7 @@ def test_consistency_3_5(xy_lrli: torch.Tensor):
 @given(args=n_complex_tensors_strategy(3))
 def test_consistency_3_6(args: torch.Tensor):
     # C95 eq. (3.6)
-    assert allclose_complex_nan(
+    assert close_complex_nan(
         sum(elliprd(*arg) for arg in permutations(args)),
         6 / args.sqrt().prod(0)
     )

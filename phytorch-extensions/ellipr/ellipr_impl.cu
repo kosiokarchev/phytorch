@@ -82,11 +82,11 @@ DEF_ELLIPR_KERNEL(d)(T x, T y, T z) {
 
 
 DEF_ELLIPR_KERNEL(f)(T x, T y, T z) {
+    ELLIPR_CHECK_xyz
+
     if (y==z) return elliprc_kernel<scalar_t>(x, y);
     if (x==z) return elliprc_kernel<scalar_t>(y, x);
     if (x==y) return elliprc_kernel<scalar_t>(z, x);
-
-    ELLIPR_CHECK_xyz
 
     auto Am = (x + y + z) / ltrl(3.);
     ELLIPR_HEADER(3.)

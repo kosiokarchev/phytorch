@@ -37,7 +37,7 @@ DEF_ROOTS(4)(T b, T c, T d, T e) {
          q = (b*b*b - ltrl(4)*b*c + ltrl(8)*d) / ltrl(8),
          D0 = c*c - ltrl(3)*b*d + ltrl(12)*e,
          D1 = ltrl(2)*c*c*c - ltrl(9)*b*c*d + ltrl(27)*b*b*e + ltrl(27)*d*d - ltrl(72)*c*e,
-         Q = pow(D1 + sqrt(D1*D1 - ltrl(4) * D0*D0*D0), ltrl((1./3.))) / cbrt(ltrl(2)),
+         Q = pow(D1 + sqrt(D1*D1 - ltrl(4) * D0*D0*D0), ltrl(1./3.)) / cbrt(ltrl(2)),
          _s2 = ((Q + D0 / Q) - twop) / ltrl(12);
     T s2;
     if (std::abs(_s2) < EPS) {
