@@ -9,7 +9,7 @@ with AutoCleanupGlobalScope():
     radian = rad = Unit(name='rad')
     steradian = sr = (rad**2).set_name('sr')
 
-    degree = deg = (180/pi * rad).set_name('deg')
+    degree = deg = (pi/180 * rad).set_name('deg')
     arcmin = (deg / 60).set_name('arcmin')
     arcsec = (arcmin / 60).set_name('arcsec')
     milliarcsec = mas = milli_(arcsec).set_name('mas')
