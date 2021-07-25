@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 
 from ..utils._typing import _TN
-from ..utils.complex import with_complex_args
+from ..utils.complex import as_complex_tensors
 from ..utils.function_context import TorchFunctionContext
 from ..utils.symmetry import elementary_symmetric
 
@@ -38,17 +38,20 @@ class Roots(torch.autograd.Function):
 
     @staticmethod
     def _roots_via_companion(*coeffs: Tensor):
-        return torch.linalg.eigvals(companion_matrix(*coeffs))
+        return tuple(torch.linalg.eigvals(companion_matrix(*coeffs)).unbind(-1))
 
     @staticmethod
-    def forward(ctx: TorchFunctionContext, *coeffs: _TN) -> tuple[Tensor, ...]:
+    def forward(ctx: TorchFunctionContext, force_numeric=False, *coeffs: _TN) -> tuple[Tensor, ...]:
         n = len(coeffs)
         if n == 0:
             raise ValueError('At least 2 coefficients are needed.')
         if n == 1:
             raise NotImplementedError('You already have the answer...')
         ctx.save_for_backward(*(
-            rts := Roots._rootfuncs.get(n, Roots._roots_via_companion)(*coeffs)
+            rts := (
+                Roots._roots_via_companion if force_numeric else
+                Roots._rootfuncs.get(n, Roots._roots_via_companion)
+            )(*coeffs)
         ))
         return rts
 
@@ -62,6 +65,8 @@ class Roots(torch.autograd.Function):
         return (grads.conj() * torch.stack(grad_outputs)).sum(1).unbind(0)
 
 
-roots = with_complex_args(Roots.apply)
+def roots(*coeffs: _TN, force_numeric=False):
+    return Roots.apply(force_numeric, *as_complex_tensors(*coeffs))
+
 
 __all__ = 'vieta', 'companion_matrix', 'roots'
