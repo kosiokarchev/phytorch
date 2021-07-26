@@ -3,9 +3,15 @@ from cmath import pi
 
 import torch
 
+from phytorch.utils.complex import to_complex
+
 
 def realise(x):
     return x if torch.is_tensor(x) and not torch.is_complex(x) else x.real
+
+
+def complexify(x):
+    return to_complex(x) if torch.is_tensor(x) else complex(x)
 
 
 def where(cond, x, y):
@@ -17,11 +23,11 @@ def sinc(x):
     if torch.is_tensor(x):
         return torch.sinc(x)
     x = x * pi
-    return cmath.sin(x) / x if x != 0 else 0
+    return cmath.sin(x) / x if x != 0 else 1
 
 
 def csinc(x, eps=1e-8):
-    return where(x < eps, (1 - sinc(x)) / x**2, 1/6)
+    return where(abs(x) > eps, (1 - sinc(x)) / (x*pi)**2, 1/6)
 
 
 def _overload(torchfunc, cmathfunc):

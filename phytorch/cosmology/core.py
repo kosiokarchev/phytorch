@@ -5,7 +5,7 @@ from math import pi
 from typing import ClassVar, Union
 
 from ..constants import c as speed_of_light, G as Newton_G
-from ..math import csinc, log10, realise, sinc
+from ..math import complexify, csinc, log10, realise, sinc
 from ..quantities.quantity import GenericQuantity
 from ..units.angular import steradian
 from ..units.astro import pc
@@ -16,7 +16,7 @@ from ..utils._typing import _TN, ValueProtocol
 _GQuantity = Union[GenericQuantity, Unit, ValueProtocol]
 
 
-class Cosmology:
+class Cosmology(ABC):
     @staticmethod
     def scale_factor(z):
         return 1 / (z+1)
@@ -26,22 +26,19 @@ class Cosmology:
         return z+1
 
 
-class FLRWDriver(ABC):
+class FLRWDriver(Cosmology, ABC):
     Ok0: _TN
 
     @property
     def sqrtOk0(self) -> _TN:
-        ret = abs(self.Ok0)**0.5
-        if isneg if isinstance((isneg := self.Ok0 < 0), bool) else isneg.any():
-            ret = ret * 1j
-        return ret
+        return complexify(self.Ok0)**0.5
 
     @property
-    def sqrtOk0_pi(self) -> _TN:
-        return self.sqrtOk0 / pi
+    def isqrtOk0_pi(self) -> _TN:
+        return 1j * self.sqrtOk0 / pi
 
     def transform_curved(self, distance_dimless: _TN) -> _TN:
-        return distance_dimless * realise(sinc(self.sqrtOk0_pi * distance_dimless))
+        return distance_dimless * realise(sinc(self.isqrtOk0_pi * distance_dimless))
 
     @abstractmethod
     def e2func(self, z: _TN) -> _TN: ...
@@ -83,14 +80,14 @@ class FLRWDriver(ABC):
         return self.comoving_transverse_distance_dimless(z) * (z+1)
 
     def differential_comoving_volume_dimless(self, z):
-        return self.comoving_transverse_distance_dimless(z) * self.inv_efunc(z)
+        return self.comoving_transverse_distance_dimless(z)**2 * self.inv_efunc(z)
 
     def comoving_volume_dimless(self, z: _TN, eps=1e-8) -> _TN:
         dc = self.comoving_distance_dimless(z)
-        return 8*pi*dc**3 * csinc(2 * self.sqrtOk0 * dc, eps)
+        return 8*pi*dc**3 * realise(csinc(2 * self.isqrtOk0_pi * dc, eps))
 
 
-class FLRW(FLRWDriver, Cosmology, ABC):
+class FLRW(FLRWDriver, ABC):
     _critical_density_constant: ClassVar = 3 / (8 * pi * Newton_G)
 
     H0: _GQuantity
