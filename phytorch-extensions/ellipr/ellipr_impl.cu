@@ -44,7 +44,9 @@ DEF_ELLIPR_KERNEL(c)(T x, T y) {
     if (not x) return ltrl(M_PI_2) / sqrt(y);
 
     if (not y.imag() and y.real() < 0) return sqrt(x / (x-y)) * elliprc_kernel<scalar_t>(x-y, -y);
-    if (std::abs(sqrt(1-x/y)) < 100*sqrt(std::numeric_limits<scalar_t>::epsilon())) return 1 / sqrt(x);
+    // TODO: handle x=y in elliprc better
+    if (std::abs(sqrt(1-x/y)) < std::max((scalar_t) 1e-3, 100*sqrt(std::numeric_limits<scalar_t>::epsilon())))
+        return (ltrl(7./6.) - (x/y) / ltrl(6)) / sqrt(y);
 
     return acos(sqrt(x) / sqrt(y)) / (sqrt(1-x/y) * sqrt(y));
 }
