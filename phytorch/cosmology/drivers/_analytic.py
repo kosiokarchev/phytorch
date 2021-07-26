@@ -37,6 +37,18 @@ class BaseAnalyticFLRWDriver(FLRWDriver, ABC):
         return val.real / self._epoly_leading**0.5
 
 
+class BaseAnalyticLambdaCDM(BaseAnalyticFLRWDriver, special.LambdaCDM, ABC):
+    _epoly_degree = 3
+
+    @property
+    def _epoly_leading(self) -> _TN:
+        return self.Om0
+
+    @property
+    def _epoly_coeffs_(self) -> Iterable[_TN]:
+        return self.Ok0, 0, self.Ode0
+
+
 class BaseAnalyticLambdaCDMR(BaseAnalyticFLRWDriver, special.LambdaCDMR, ABC):
     _epoly_degree = 4
 

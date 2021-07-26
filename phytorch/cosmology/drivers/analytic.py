@@ -5,7 +5,7 @@ from typing import Callable, ClassVar, Iterable
 
 from torch import Tensor
 
-from ._analytic import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDMR
+from ._analytic import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDM, BaseAnalyticLambdaCDMR
 from ...special.elliptic_reduction.symbolic import SymbolicEllipticReduction
 from ...utils._typing import _TN
 
@@ -42,6 +42,9 @@ class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
         ))
 
 
-# noinspection PyAbstractClass
+class LambdaCDM(AnalyticFLRWDriver, BaseAnalyticLambdaCDM):
+    pass
+
+
 class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
     pass

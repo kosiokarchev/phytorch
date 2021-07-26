@@ -2,7 +2,7 @@ from abc import ABC
 from itertools import chain
 from operator import neg
 
-from ._analytic import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDMR
+from ._analytic import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDM, BaseAnalyticLambdaCDMR
 from ...special.elliptic_reduction.functional import elliptic_integral
 from ...utils._typing import _TN
 
@@ -24,6 +24,9 @@ class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
         ))
 
 
-# noinspection PyAbstractClass
+class LambdaCDM(AnalyticFLRWDriver, BaseAnalyticLambdaCDM):
+    pass
+
+
 class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
     pass
