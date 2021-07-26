@@ -20,7 +20,9 @@ class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
         rednn = SymbolicEllipticReduction.get(cls._epoly_degree, cls._epoly_degree)
         cls._integral_comoving_distance = staticmethod(rednn.desymbolise(rednn.Ie(0)))
         redn1n = SymbolicEllipticReduction.get(cls._epoly_degree+1, cls._epoly_degree)
-        cls._integral_lookback_time = staticmethod(redn1n.desymbolise(redn1n.Ie(-cls._epoly_degree-1)))
+        # TODO: unhack h=3
+        #    would have redn1n.Ie(-cls._epoly_degree-1) instead of h
+        cls._integral_lookback_time = staticmethod(redn1n.desymbolise(redn1n.Ie(-redn1n.h-1)))
 
     def lookback_time_dimless(self, z: _TN) -> _TN:
         return self._fix_dimless(self._integral_lookback_time(

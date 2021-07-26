@@ -77,6 +77,12 @@ class EllipticReduction:
         return len(self.a)
 
     def __post_init__(self):
+        # TODO: unhack h=3
+        if self.h == 3:
+            self.a = (1,) + tuple(self.a)
+            self.b = (0,) + tuple(self.b)
+            self.h = 4
+
         if not isinstance(self.a, OneIndexedSequence):
             self.a = OneIndexedSequence(self.a)
         if not isinstance(self.b, OneIndexedSequence):
@@ -235,6 +241,10 @@ class EllipticReduction:
 
     @cache
     def Im(self, m: Sequence[int]):
+        # TODO: unhack h=3
+        if len(m) == self.n - 1:
+            m = (0,) + tuple(m)
+
         i0 = 1
         M = sum(m)
         m = OneIndexedSequence(m)

@@ -32,5 +32,7 @@ class SymbolicEllipticReduction(EllipticReduction):
 
     @cache
     def desymbolise(self, expr: sym.Expr) -> Callable[[Iterable[_T], Iterable[_T], tuple[_T, _T]], _T]:
-        return sym.lambdify([self.a, self.b, (self.y, self.x)], expr,
+        # TODO: unhack h=3
+        a, b = (tuple(self.a)[1:], tuple(self.b)[1:]) if not isinstance(self.a[1], sym.Symbol) else (self.a, self.b)
+        return sym.lambdify([a, b, (self.y, self.x)], expr,
                             modules=[{'sqrt': lambda x: x**0.5}, torch])
