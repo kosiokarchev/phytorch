@@ -7,8 +7,6 @@
 #include "../common/complex.h" // NOLINT(modernize-deprecated-headers)
 
 
-#define EPS 1e-8
-
 #define DEF_ROOTS(N) template <typename scalar_t, typename T=complex<scalar_t>> __host__ __device__ std::array<T, N> roots##N##_kernel
 
 
@@ -20,10 +18,13 @@ DEF_ROOTS(2)(T b, T c) {
 
 DEF_ROOTS(3)(T b, T c, T d) {
     auto D0 = b*b - 3*c,
-         D1 = ltrl(2)*b*b*b - ltrl(9)*b*c + ltrl(27)*d,
-         D2 = sqrt(D1*D1 - ltrl(4)*D0*D0*D0),
+         D1 = ltrl(2)*b*b*b - ltrl(9)*b*c + ltrl(27)*d;
+    if (D0 == ltrl(0) and D1 == ltrl(0))
+        return {-b/ltrl(3), -b/ltrl(3), -b/ltrl(3)};
+
+    auto D2 = sqrt(D1*D1 - ltrl(4)*D0*D0*D0),
          C = D1 + D2;
-    if (std::abs(C) < EPS) C = D1 + D2;
+    if (C == ltrl(0)) C = D1 - D2;
     C = pow(C / ltrl(2), ltrl((1./3.)));
     auto cr1 = T(-0.5, -sqrt(3)/2);
     return {-(b + C + D0/C) / ltrl(3),
@@ -40,7 +41,7 @@ DEF_ROOTS(4)(T b, T c, T d, T e) {
          Q = pow(D1 + sqrt(D1*D1 - ltrl(4) * D0*D0*D0), ltrl(1./3.)) / cbrt(ltrl(2)),
          _s2 = ((Q + D0 / Q) - twop) / ltrl(12);
     T s2;
-    if (std::abs(_s2) < EPS) {
+    if (_s2 == ltrl(0)) {
         Q *= T(-0.5, -sqrt(3)/2);
         s2 = ((Q + D0 / Q) - twop) / ltrl(12);
     } else s2 = _s2;
