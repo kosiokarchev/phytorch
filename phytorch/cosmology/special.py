@@ -3,8 +3,12 @@ from __future__ import annotations
 from abc import ABC
 from functools import partial, partialmethod
 from math import pi
+from typing import ClassVar, TYPE_CHECKING
 
-from .core import FLRW
+from .core import _GQuantity, FLRW
+from ..constants import c as speed_of_light, sigma as sigma_sb
+from ..quantities.quantity import GenericQuantity
+from ..units.Unit import Unit
 from ..utils._typing import _TN
 
 
@@ -51,6 +55,9 @@ class BaseLambdaCDM(FLRW, ABC):
         def __set_name__(self, owner: LambdaCDMR, name):
             setattr(owner, name, partialmethod(self._redshift_method, O0_name=f'{name}0'))
 
+        if TYPE_CHECKING:
+            def __call__(self, z: _TN) -> _TN: ...
+
     Om = _redshift_method(_redshift_matter)
     Ob = _redshift_method(_redshift_matter)
     Odm = _redshift_method(_redshift_matter)
@@ -64,6 +71,21 @@ class LambdaCDM(BaseLambdaCDM, ABC):
 
 class LambdaCDMR(LambdaCDM, ABC):
     Or0: _TN = 0.
+
+    _radiation_density_constant: ClassVar = 4 * sigma_sb / speed_of_light**3
+
+    @property
+    def Tcmb0(self):
+        return (self.Or0 * self.critical_density0 / self._radiation_density_constant)**0.25
+
+    def Tcmb(self, z: _TN) -> _GQuantity:
+        return self.Tcmb0 * (1+z)
+
+    @Tcmb0.setter
+    def Tcmb0(self, value):
+        self.Or0 = (value**4 * self._radiation_density_constant / self.critical_density0).to(Unit())
+        if isinstance(self.Or0, GenericQuantity):  # TODO: -> _GQuantity
+            self.Or0 = self.Or0.value
 
     @property
     def Ok0(self) -> _TN:

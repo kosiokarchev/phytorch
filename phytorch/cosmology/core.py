@@ -52,11 +52,17 @@ class FLRWDriver(Cosmology, ABC):
     def lookback_time_integrand(self, z: _TN) -> _TN:
         return self.inv_efunc(z) / (z+1)
 
+    def abs_distance_integrand(self, z: _TN) -> _TN:
+        return (z+1)**2 * self.inv_efunc(z)
+
     @abstractmethod
     def lookback_time_dimless(self, z: _TN) -> _TN: ...
 
     @abstractmethod
     def age_dimless(self, z: _TN) -> _TN: ...
+
+    @abstractmethod
+    def absorption_distance_dimless(self, z: _TN) -> _TN: ...
 
     def comoving_distance_dimless(self, z: _TN) -> _TN:
         return self.comoving_distance_dimless_z1z2(0, z)
@@ -126,6 +132,10 @@ class FLRW(FLRWDriver, ABC):
 
     def age(self, z: _TN) -> _GQuantity:
         return self.hubble_time * self.age_dimless(z)
+
+    # For compatibility with astropy, the absorption_distance is dimensionless
+    def absorption_distance(self, z: _TN) -> _TN:
+        return self.absorption_distance_dimless(z)
 
     def comoving_distance(self, z: _TN) -> _GQuantity:
         return self.hubble_distance * self.comoving_distance_dimless(z)
