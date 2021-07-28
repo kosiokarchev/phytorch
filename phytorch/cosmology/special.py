@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import partial, partialmethod
 from math import pi
 from typing import ClassVar, TYPE_CHECKING
 
 from .core import _GQuantity, FLRW
 from ..constants import c as speed_of_light, sigma as sigma_sb
-from ..quantities.quantity import GenericQuantity
 from ..units.Unit import Unit
 from ..utils._typing import _TN
 
@@ -23,6 +22,10 @@ class FlatFLRW(FLRW, ABC):
 
 
 class BaseLambdaCDM(FLRW, ABC):
+    @property
+    @abstractmethod
+    def Ok0(self) -> _TN: ...
+
     Om0: _TN
     Ode0: _TN
     Ob0: _TN = 0.
@@ -30,14 +33,6 @@ class BaseLambdaCDM(FLRW, ABC):
     @property
     def Odm0(self) -> _TN:
         return self.Om0 - self.Ob0
-
-    @property
-    def Ok0(self) -> _TN:
-        return 1. - (self.Om0 + self.Ode0)
-
-    def e2func(self, z: _TN) -> _TN:
-        zp1 = z+1
-        return zp1**2 * (self.Om0 * zp1 + self.Ok0) + self.Ode0
 
     def _redshift_power(self, z: _TN, O0_name: str, power: float) -> _TN:
         return getattr(self, O0_name) * (z+1)**power / self.e2func(z)
@@ -65,8 +60,23 @@ class BaseLambdaCDM(FLRW, ABC):
     Ode = _redshift_method(_redshift_constant)
 
 
+class BaseFlatLambdaCDM(FlatFLRW, BaseLambdaCDM, ABC):
+    @property
+    @abstractmethod
+    def Ode0(self): ...
+
+    @Ode0.setter
+    def Ode0(self, value): raise NotImplementedError
+
+
 class LambdaCDM(BaseLambdaCDM, ABC):
-    pass
+    @property
+    def Ok0(self) -> _TN:
+        return 1. - (self.Om0 + self.Ode0)
+
+    def e2func(self, z: _TN) -> _TN:
+        zp1 = z+1
+        return zp1**2 * (self.Om0 * zp1 + self.Ok0) + self.Ode0
 
 
 class LambdaCDMR(LambdaCDM, ABC):
@@ -87,21 +97,38 @@ class LambdaCDMR(LambdaCDM, ABC):
     def Tcmb0(self, value):
         self.Or0 = (1 + self.Neff * self._neutrino_energy_scale) * (value**4 * self._radiation_density_constant / self.critical_density0).to(Unit()).value
 
+    _redshift_radiation = partial(LambdaCDM._redshift_power, power=4)
+    Or = LambdaCDM._redshift_method(_redshift_radiation)
+
     @property
     def Ok0(self) -> _TN:
-        return super().Ok0 - self.Or0
+        return 1 - (self.Om0 + self.Ode0 + self.Or0)
 
     def e2func(self, z: _TN) -> _TN:
         zp1 = z+1
         return zp1**2 * ((self.Or0 * zp1 + self.Om0) * zp1 + self.Ok0) + self.Ode0
 
-    _redshift_radiation = partial(LambdaCDM._redshift_power, power=4)
-    Or = LambdaCDM._redshift_method(_redshift_radiation)
+
+class FlatLambdaCDM(LambdaCDM, BaseFlatLambdaCDM, ABC):
+    @property
+    def Ode0(self):
+        return 1 - self.Om0
+
+    @Ode0.setter
+    def Ode0(self, value):
+        self.Om0 = 1 - value
 
 
-class FlatLambdaCDMR(FlatFLRW, LambdaCDMR, ABC):
+class FlatLambdaCDMR(LambdaCDMR, BaseFlatLambdaCDM, ABC):
+    @property
+    def Ode0(self):
+        return 1 - (self.Om0 + self.Or0)
+
+    @Ode0.setter
+    def Ode0(self, value):
+        self.Om0 = 1 - (value + self.Or0)
+
     # TODO: optimised for ellipr
     # def comoving_distance_dimless(self, z: _t) -> _t: ...
     # def lookback_time_dimless(self, z: _t) -> _t: ...
     # def age_dimless(self, z: _t) -> _t: ...
-    pass

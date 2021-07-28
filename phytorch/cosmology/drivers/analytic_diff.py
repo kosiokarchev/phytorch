@@ -3,6 +3,7 @@ from itertools import chain
 from operator import neg
 
 from ._analytic import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDM, BaseAnalyticLambdaCDMR
+from .. import special
 from ...special.elliptic_reduction.functional import elliptic_integral
 from ...utils._typing import _TN
 
@@ -37,4 +38,12 @@ class LambdaCDM(AnalyticFLRWDriver, BaseAnalyticLambdaCDM):
 
 
 class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
+    pass
+
+
+class FlatLambdaCDM(LambdaCDM, special.FlatLambdaCDM):
+    pass
+
+
+class FlatLambdaCDMR(LambdaCDMR, special.FlatLambdaCDMR):
     pass
