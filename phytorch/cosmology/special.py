@@ -71,21 +71,21 @@ class LambdaCDM(BaseLambdaCDM, ABC):
 
 class LambdaCDMR(LambdaCDM, ABC):
     Or0: _TN = 0.
+    Neff: _TN = 0.
 
     _radiation_density_constant: ClassVar = 4 * sigma_sb / speed_of_light**3
+    _neutrino_energy_scale: ClassVar = 7/8 * (4/11)**(4/3)
 
     @property
     def Tcmb0(self):
-        return (self.Or0 * self.critical_density0 / self._radiation_density_constant)**0.25
+        return (self.Or0 / (1 + self.Neff * self._neutrino_energy_scale) * self.critical_density0 / self._radiation_density_constant)**0.25
 
     def Tcmb(self, z: _TN) -> _GQuantity:
         return self.Tcmb0 * (1+z)
 
     @Tcmb0.setter
     def Tcmb0(self, value):
-        self.Or0 = (value**4 * self._radiation_density_constant / self.critical_density0).to(Unit())
-        if isinstance(self.Or0, GenericQuantity):  # TODO: -> _GQuantity
-            self.Or0 = self.Or0.value
+        self.Or0 = (1 + self.Neff * self._neutrino_energy_scale) * (value**4 * self._radiation_density_constant / self.critical_density0).to(Unit()).value
 
     @property
     def Ok0(self) -> _TN:

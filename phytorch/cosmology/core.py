@@ -111,7 +111,7 @@ class FLRW(FLRWDriver, ABC):
 
     @property
     def hubble_distance_in_10pc(self) -> _TN:
-        return (self.hubble_distance / (10 * pc)).value
+        return self.hubble_distance.to(10*pc).value
 
     @property
     def hubble_volume(self) -> _GQuantity:
@@ -166,4 +166,4 @@ class FLRW(FLRWDriver, ABC):
 
     def distmod(self, z: _TN):
         # TODO: return as magnitude quantity?
-        return 5 + 2.5 * log10((self.luminosity_distance_dimless(z) * self.hubble_distance_in_10pc)**2)
+        return 2.5 * log10((self.luminosity_distance_dimless(z) * self.hubble_distance_in_10pc)**2)
