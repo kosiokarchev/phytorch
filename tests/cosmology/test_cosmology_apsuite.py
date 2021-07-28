@@ -403,7 +403,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         assert isclose(cosmo.angular_diameter_distance_z1z2(1, 2).to(Mpc).value,
                        tensor(646.22968662822018))
 
-        # TODO: ER x-y symmetry
+        # TODO: ER x=y
         assert allclose(
             cosmo.angular_diameter_distance_z1z2(tensor([0, 0, 2, 0.5, 1]), tensor([2, 1, 1, 2.5, 1.1])).to(Mpc).value,
             abs(tensor([1760.0628637762106, 1670.7497657219858, -969.34452994, 1159.0970895962193, 115.72768186186921]))
@@ -467,7 +467,6 @@ class BaseLambdaCDMRTest(BaseLambdaCDMDriverTest):
             vals = 2 * hubdis * (((1 + Or0*z) / (1+z))**0.5 - 1) / (Or0 - 1)
 
             cosmo = self.flat_cosmo_cls()
-            cosmo._roots_force_numeric = True  # TODO: generalise quartic root
             cosmo.H0, cosmo.Neff, cosmo.Tcmb0, cosmo.Ode0 = H70, Neff, Tcmb0 * kelvin, 0
 
             assert allclose(cosmo.comoving_distance(z).to(Mpc).value, tensor(vals))

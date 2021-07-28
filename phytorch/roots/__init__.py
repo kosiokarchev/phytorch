@@ -69,4 +69,8 @@ def roots(*coeffs: _TN, force_numeric=False):
     return Roots.apply(force_numeric, *as_complex_tensors(*coeffs))
 
 
-__all__ = 'vieta', 'companion_matrix', 'roots'
+def sroots(*coeffs: _TN, dim: int = 0, force_numeric=False):
+    return torch.stack(roots(*coeffs, force_numeric=force_numeric), dim=dim)
+
+
+__all__ = 'vieta', 'companion_matrix', 'roots', 'sroots'

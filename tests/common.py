@@ -2,6 +2,7 @@ from functools import reduce, update_wrapper
 from operator import and_
 
 import torch
+from pytest import fixture
 from hypothesis import strategies as st
 
 
@@ -13,6 +14,34 @@ def with_default_double(func):
         torch.set_default_dtype(default_dtype)
         return ret
     return update_wrapper(f, func)
+
+
+class BaseDtypeTest:
+    dtype: torch.dtype
+    name: str
+
+    @fixture(autouse=True, scope='class')
+    def _set_default_dtype(self):
+        previous_dtype = torch.get_default_dtype()
+        torch.set_default_dtype(self.dtype)
+        yield
+        torch.set_default_dtype(previous_dtype)
+
+
+class BaseFloatTest(BaseDtypeTest):
+    dtype = torch.float
+    name = 'Float'
+
+
+class BaseDoubleTest(BaseDtypeTest):
+    dtype = torch.double
+    name = 'Double'
+
+
+def make_dtype_tests(bases, name):
+    return {_name: type(_name, bases+(cls,), {})
+            for cls in (BaseFloatTest, BaseDoubleTest)
+            for _name in [f'Test{cls.name}{name}']}
 
 
 CLOSE_KWARGS = dict(atol=1e-6, rtol=1e-6)
