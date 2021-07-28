@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as tp
 from numbers import Real
 
@@ -7,7 +9,6 @@ from frozendict import frozendict
 from torch import Tensor
 
 from .functypes import DictByName, TORCH_FUNCTYPES_H
-from ..delegation.delegator import Delegator
 from ..delegation.quantity_delegators import QuantityDelegator, QuantityDelegatorBase
 from ..quantity import GenericQuantity, UnitFuncType
 from ...units.Unit import Unit

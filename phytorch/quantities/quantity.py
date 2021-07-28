@@ -3,7 +3,7 @@ from __future__ import annotations
 import operator
 from enum import auto, Enum
 from fractions import Fraction
-from typing import Protocol, Type, TypeVar, Union
+from typing import MutableMapping, Protocol, Type, TypeVar, Union
 
 from .delegation.delegating import Delegating
 from .delegation.quantity_delegators import PowerDelegator, ProductDelegator, QuantityDelegator
@@ -27,6 +27,19 @@ _t = TypeVar('_t', Type[QuantityBackendProtocol], type)
 
 
 class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
+    _generic_quantiy_subtypes: MutableMapping[Type, Type] = {}
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._generic_quantiy_subtypes[cls._T] = cls
+
+    @classmethod
+    def _from_bare_and_unit(cls, bare: _t, unit: Unit) -> GenericQuantity[_t]:
+        ret = bare.as_subclass(cls)
+        ret.unit = unit
+        return ret
+
+
     unit: Meta.meta_attribute(Unit) = None
     _T: Union[Type[QuantityBackendProtocol], Type]
 
@@ -123,7 +136,7 @@ class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
      histc) = (QuantityDelegator(out_unit=False) for _ in range(15))
 
     @property
-    def value(self) -> _T:
+    def value(self) -> _t:
         raise NotImplementedError()
 
     def to(self, unit: Unit = None, *args, **kwargs):

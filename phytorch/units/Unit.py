@@ -6,6 +6,7 @@ from numbers import Number, Real
 from operator import add, mul, neg
 from typing import Generic, ItemsView, Iterable, Type, Union
 
+from .. import quantities
 from ..utils._typing import _bop, _fractionable, _mop, _T, ValueProtocol
 
 
@@ -52,6 +53,11 @@ class UnitBase(dict):
     def __mul__(self, other, **kwargs):
         if isinstance(other, Unit):
             return self._operate_other(other, add, **kwargs)
+        elif not isinstance(other, quantities.quantity.GenericQuantity) and (cls := next((
+            cls for cls in quantities.quantity.GenericQuantity._generic_quantiy_subtypes.keys()
+            if isinstance(other, cls)
+        ), None)) is not None:
+            return quantities.quantity.GenericQuantity._generic_quantiy_subtypes[cls]._from_bare_and_unit(other, unit=self)
         else:
             return NotImplemented
 
@@ -83,6 +89,12 @@ class EqualityWrapper(Generic[_T]):
         return self.cls.__str__(self.wrapped)
 
 
+class ValuedFloat(float):
+    @property
+    def value(self):
+        return self
+
+
 class Unit(UnitBase, ValueProtocol):
     def __init__(self, *args, value: Real = Fraction(1), name=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -98,7 +110,7 @@ class Unit(UnitBase, ValueProtocol):
     def to(self, other: Unit):
         if self.dimension != other.dimension:
             raise TypeError(f'Cannot convert {self}, aka {self.dimension}, to {other}, aka {other.dimension}')
-        return self.value / other.value
+        return ValuedFloat(self.value / other.value)
 
     def __str__(self):
         return self.name or f'{self.value} x {super().__str__()}'
@@ -120,7 +132,7 @@ class Unit(UnitBase, ValueProtocol):
         elif isinstance(other, Real):
             return self._make(self.items(), value=self.value * other, name=f'{other!s} {Unit.__str__(self)}', **kwargs)
         else:
-            return NotImplemented
+            return super().__mul__(other, **kwargs)
 
     def __eq__(self, other):
         return isinstance(other, Unit) and self.value == other.value and super().__eq__(other)
