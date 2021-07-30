@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import partial, partialmethod
-from math import pi
+from math import asinh, pi
 from typing import ClassVar, TYPE_CHECKING
 
 from .core import _GQuantity, FLRW
@@ -118,6 +118,9 @@ class FlatLambdaCDM(LambdaCDM, BaseFlatLambdaCDM, ABC):
     def Ode0(self, value):
         self.Om0 = 1 - value
 
+    def age_dimless(self, z: _TN) -> _TN:
+        return (2/3) / (1-self.Om0)**0.5 * asinh(((1/self.Om0 - 1) / (1+z)**3)**0.5)
+
 
 class FlatLambdaCDMR(LambdaCDMR, BaseFlatLambdaCDM, ABC):
     @property
@@ -128,7 +131,29 @@ class FlatLambdaCDMR(LambdaCDMR, BaseFlatLambdaCDM, ABC):
     def Ode0(self, value):
         self.Om0 = 1 - (value + self.Or0)
 
-    # TODO: optimised for ellipr
+    # TODO: optimise
     # def comoving_distance_dimless(self, z: _t) -> _t: ...
     # def lookback_time_dimless(self, z: _t) -> _t: ...
     # def age_dimless(self, z: _t) -> _t: ...
+
+
+class AbstractBaseLambdaCDM(BaseLambdaCDM):
+    def lookback_time_dimless(self, z: _TN) -> _TN: ...
+    def age_dimless(self, z: _TN) -> _TN: ...
+    def absorption_distance_dimless(self, z: _TN) -> _TN: ...
+
+
+class AbstractLambdaCDM(AbstractBaseLambdaCDM, LambdaCDMR):
+    pass
+
+
+class AbstractFlatLambdaCDM(FlatLambdaCDM, AbstractLambdaCDM):
+    pass
+
+
+class AbstractLambdaCDMR(AbstractBaseLambdaCDM, LambdaCDMR):
+    pass
+
+
+class AbstractFlatLambdaCDMR(FlatLambdaCDMR, AbstractLambdaCDMR):
+    pass

@@ -56,6 +56,8 @@ class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
 
 
 class LambdaCDM(AnalyticFLRWDriver, BaseAnalyticLambdaCDM):
+    # TODO: optimise: _elliptic_comoving_distance_z1z2
+
     # TODO: unhack h=3
     def absorption_distance_dimless(self, z: _TN) -> _TN:
         raise NotImplementedError
@@ -65,9 +67,10 @@ class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
     pass
 
 
-class FlatLambdaCDM(LambdaCDM, special.FlatLambdaCDM):
+class FlatLambdaCDM(special.FlatLambdaCDM, LambdaCDM):
+    # TODO: optimise: _hypergeometric_comoving_distance_z1z2
     pass
 
 
-class FlatLambdaCDMR(LambdaCDMR, special.FlatLambdaCDMR):
+class FlatLambdaCDMR(special.FlatLambdaCDMR, LambdaCDMR):
     pass

@@ -13,21 +13,11 @@ import phytorch.cosmology.drivers.analytic
 import phytorch.cosmology.drivers.analytic_diff
 import phytorch.cosmology.special
 from phytorch.constants import codata2014, G as Newton_G
+from phytorch.cosmology.special import AbstractFlatLambdaCDMR, AbstractLambdaCDMR
 from phytorch.units.astro import Gpc, Gyr, Mpc
 from phytorch.units.si import cm, gram, kelvin, km, s
 from phytorch.units.Unit import Unit
-from phytorch.utils._typing import _TN
 from tests.common import with_default_double
-
-
-class AbstractLambdaCDMR(phytorch.cosmology.special.LambdaCDMR):
-    def lookback_time_dimless(self, z: _TN) -> _TN: ...
-    def age_dimless(self, z: _TN) -> _TN: ...
-    def absorption_distance_dimless(self, z: _TN) -> _TN: ...
-
-
-class AbstractFlatLambdaCDMR(AbstractLambdaCDMR, phytorch.cosmology.special.FlatLambdaCDMR):
-    pass
 
 
 ZERO = torch.zeros(())
@@ -35,7 +25,6 @@ ONE = torch.ones(())
 SMALL = 1e-16
 Z = tensor([0, 0.5, 1, 2])
 
-H100 = 100 * km/s/Mpc
 H70 = 70 * km/s/Mpc
 H704 = 70.4 * km/s/Mpc
 
@@ -321,7 +310,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
 
     def test_comoving_distance_z1z2(self):
         cosmo = self.cosmo_cls()
-        cosmo.H0, cosmo.Om0, cosmo.Ode0 = H100, 0.3, 0.8
+        cosmo.Om0, cosmo.Ode0 = 0.3, 0.8
 
         with pytest.raises(RuntimeError):
             cosmo.comoving_distance_z1z2(tensor((1, 2)), tensor((3, 4, 5)))
@@ -342,7 +331,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
                 # (0, 2997.92458),
                 (1, 1756.1435599923348),):
             cosmo = self.flat_cosmo_cls()
-            cosmo.H0, cosmo.Om0 = H100, Om0
+            cosmo.Om0 = Om0
 
             assert allclose(
                 cosmo.comoving_distance(0).to(Mpc).value,
@@ -356,7 +345,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         z1, z2 = tensor([0, 0, 2, 0.5, 1]), tensor([2, 1, 1, 2.5, 1.1])
 
         cosmo = self.flat_cosmo_cls()
-        cosmo.H0, cosmo.Om0 = H100, 0.3
+        cosmo.Om0 = 0.3
 
         with pytest.raises(RuntimeError):
             cosmo.comoving_transverse_distance_z1z2(tensor((1, 2)), tensor((3, 4, 5)))
@@ -367,7 +356,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
                         cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value)
 
         cosmo = self.flat_cosmo_cls()
-        cosmo.H0, cosmo.Om0 = H100, 1.5
+        cosmo.Om0 = 1.5
         # TODO: ER x<y
         assert allclose(
             cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value,
@@ -377,7 +366,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
                         cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value)
 
         cosmo = self.cosmo_cls()
-        cosmo.H0, cosmo.Om0, cosmo.Ode0 = H100, 0.3, 0.5
+        cosmo.Om0, cosmo.Ode0 = 0.3, 0.5
         # TODO: ER x<y
         assert allclose(
             cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value,
@@ -385,7 +374,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         )
 
         cosmo = self.cosmo_cls()
-        cosmo.H0, cosmo.Om0, cosmo.Ode0 = H100, 1, 0.2
+        cosmo.Om0, cosmo.Ode0 = 1, 0.2
         # TODO: ER x<y
         assert allclose(
             cosmo.comoving_transverse_distance_z1z2(0.1, tensor([0, 0.1, 0.2, 0.5, 1.1, 2])).to(Mpc).value,
@@ -422,7 +411,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
 
         # Non-flat (negative Ok0) test
         cosmo = self.cosmo_cls()
-        cosmo.H0, cosmo.Om0, cosmo.Ode0 = H100, 2, 1
+        cosmo.Om0, cosmo.Ode0 = 2, 1
         assert isclose(cosmo.angular_diameter_distance_z1z2(1, 2).to(Mpc).value, tensor(228.42914659246014))
 
     # TODO: absorption_distance

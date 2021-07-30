@@ -39,3 +39,4 @@ def _overload(torchfunc, cmathfunc):
 exp = _overload(torch.exp, cmath.exp)
 log10 =_overload(torch.log10, cmath.log10)
 sin = _overload(torch.sin, cmath.sin)
+asinh = _overload(torch.asinh, cmath.asinh)

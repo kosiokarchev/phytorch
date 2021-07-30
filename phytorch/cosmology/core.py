@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from math import pi
+from math import inf, pi
 from typing import ClassVar, Union
 
 from ..constants import c as speed_of_light, G as Newton_G
 from ..math import complexify, csinc, log10, realise, sinc
 from ..quantities.quantity import GenericQuantity
 from ..units.angular import steradian
-from ..units.astro import pc
+from ..units.astro import Mpc, pc
+from ..units.si import km, s
 from ..units.Unit import Unit
 from ..utils._typing import _TN, ValueProtocol
 
 
 _GQuantity = Union[GenericQuantity, Unit, ValueProtocol]
+
+
+H100 = 100 * km/s/Mpc
 
 
 class Cosmology(ABC):
@@ -55,18 +59,22 @@ class FLRWDriver(Cosmology, ABC):
     def abs_distance_integrand(self, z: _TN) -> _TN:
         return (z+1)**2 * self.inv_efunc(z)
 
-    @abstractmethod
-    def lookback_time_dimless(self, z: _TN) -> _TN: ...
+    # TODO: @abstractmethodgroup
+    def lookback_time_dimless(self, z: _TN) -> _TN:
+        return self.age_dimless(0) - self.age_dimless(z)
 
-    @abstractmethod
-    def age_dimless(self, z: _TN) -> _TN: ...
+    # TODO: @abstractmethodgroup
+    def age_dimless(self, z: _TN) -> _TN:
+        return self.lookback_time_dimless(inf)
 
     @abstractmethod
     def absorption_distance_dimless(self, z: _TN) -> _TN: ...
 
+    # TODO: @abstractmethodgroup
     def comoving_distance_dimless(self, z: _TN) -> _TN:
         return self.comoving_distance_dimless_z1z2(0, z)
 
+    # TODO: @abstractmethodgroup
     def comoving_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
         return self.comoving_distance_dimless(z2) - self.comoving_distance_dimless(z1)
 
@@ -96,7 +104,7 @@ class FLRWDriver(Cosmology, ABC):
 class FLRW(FLRWDriver, ABC):
     _critical_density_constant: ClassVar = 3 / (8 * pi * Newton_G)
 
-    H0: _GQuantity
+    H0: _GQuantity = H100
 
     def H(self, z: _TN) -> _GQuantity:
         return self.H0 * self.efunc(z)
