@@ -1,5 +1,5 @@
 from functools import update_wrapper
-from typing import Callable
+from typing import Callable, TypeVar
 
 import torch
 from torch import Tensor
@@ -22,8 +22,9 @@ def as_complex_tensors(*args: Tensor):
     return (to_complex(a) for a in map(torch.as_tensor, args))
 
 
+_T = TypeVar('_T')
 # TODO: Python 3.10: ArgSpec
-def with_complex_args(f: Callable[[Tensor, ...], Tensor]) -> Callable[[Tensor, ...], Tensor]:
+def with_complex_args(f: _T) -> _T:
     def _f(*args: Tensor):
         return f(*as_complex_tensors(*args))
     return update_wrapper(_f, f)

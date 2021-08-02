@@ -7,13 +7,13 @@
 #include "../common/complex.h" // NOLINT(modernize-deprecated-headers)
 
 
-#define DEF_ROOTS(N) template <typename scalar_t, typename T=complex<scalar_t>> __host__ __device__ std::array<T, N> roots##N##_kernel
+#define DEF_ROOTS(N) template <typename scalar_t, typename T=complex<scalar_t>> __host__ __device__ std::array<T, N> roots##N
 
 
 DEF_ROOTS(2)(T b, T c) {
     if (not (isfinite(b) and isfinite(c)))
-        return {std::numeric_limits<T>::quiet_NaN(),
-                std::numeric_limits<T>::quiet_NaN()};
+        return {numeric_limits<T>::quiet_NaN(),
+                numeric_limits<T>::quiet_NaN()};
     return {(-b - sqrt(b*b - ltrl(4)*c)) / ltrl(2),
             (-b + sqrt(b*b - ltrl(4)*c)) / ltrl(2)};
 }
@@ -21,9 +21,9 @@ DEF_ROOTS(2)(T b, T c) {
 
 DEF_ROOTS(3)(T b, T c, T d) {
     if (not (isfinite(b) and isfinite(c) and isfinite(d)))
-        return {std::numeric_limits<T>::quiet_NaN(),
-                std::numeric_limits<T>::quiet_NaN(),
-                std::numeric_limits<T>::quiet_NaN()};
+        return {numeric_limits<T>::quiet_NaN(),
+                numeric_limits<T>::quiet_NaN(),
+                numeric_limits<T>::quiet_NaN()};
     auto D0 = b*b - 3*c,
          D1 = ltrl(2)*b*b*b - ltrl(9)*b*c + ltrl(27)*d;
     if (D0 == ltrl(0) and D1 == ltrl(0))
@@ -42,10 +42,10 @@ DEF_ROOTS(3)(T b, T c, T d) {
 
 DEF_ROOTS(4)(T b, T c, T d, T e) {
     if (not (isfinite(b) and isfinite(c) and isfinite(d) and isfinite(e)))
-        return {std::numeric_limits<T>::quiet_NaN(),
-                std::numeric_limits<T>::quiet_NaN(),
-                std::numeric_limits<T>::quiet_NaN(),
-                std::numeric_limits<T>::quiet_NaN()};
+        return {numeric_limits<T>::quiet_NaN(),
+                numeric_limits<T>::quiet_NaN(),
+                numeric_limits<T>::quiet_NaN(),
+                numeric_limits<T>::quiet_NaN()};
     auto twop = (ltrl(8)*c - ltrl(3)*b*b) / ltrl(4),
          q = (b*b*b - ltrl(4)*b*c + ltrl(8)*d) / ltrl(8),
          D0 = c*c - ltrl(3)*b*d + ltrl(12)*e,
@@ -76,10 +76,10 @@ DEF_ROOTS(4)(T b, T c, T d, T e) {
 
 #define ROOTS_IMPL(N, VARSPEC, VARNAMES, ...) \
     if (iter.device(0).is_cpu())              \
-        cpu_kernel_multiple_outputs(iter, roots##N##_kernel<scalar_t>); \
+        cpu_kernel_multiple_outputs(iter, roots##N<scalar_t>); \
     else at::native::gpu_kernel_multiple_outputs(                     \
         iter, []GPU_LAMBDA VARSPEC -> thrust::tuple<__VA_ARGS__> {      \
-            return c10::guts::apply(thrust::make_tuple<__VA_ARGS__>, roots##N##_kernel<scalar_t>VARNAMES);});
+            return c10::guts::apply(thrust::make_tuple<__VA_ARGS__>, roots##N<scalar_t>VARNAMES);});
 
 
 template <int n> void roots_impl(at::TensorIteratorBase& iter) {

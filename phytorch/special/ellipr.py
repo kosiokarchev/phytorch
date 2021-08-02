@@ -13,13 +13,13 @@ from ..utils.function_context import TorchFunctionContext
 # noinspection PyMethodOverriding
 class Elliprf(Function):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: Tensor) -> Tensor:
+    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
         ctx.set_materialize_grads(False)
         ctx.save_for_backward(x, y, z)
         return _ellipr.elliprf(x, y, z)
 
     @staticmethod
-    def backward(ctx: TorchFunctionContext, grad: Tensor) -> tuple[Optional[Tensor], ...]:
+    def backward(ctx: TorchFunctionContext, grad: Tensor) -> tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         return tuple(
             (-elliprd(*args[::-1][:-1], args[0]) / 6.).conj() * grad if nig else None
             for nig, args in zip(ctx.needs_input_grad, circular_shifts(ctx.saved_tensors))
@@ -29,7 +29,7 @@ class Elliprf(Function):
 # noinspection PyMethodOverriding,PyAbstractClass
 class Elliprj(Function):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN, p: Tensor) -> Tensor:
+    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN, p: _TN) -> Tensor:
         ctx.mark_non_differentiable(
             ret := _ellipr.elliprj(x, y, z, p))
         return ret
