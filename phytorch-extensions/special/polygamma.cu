@@ -20,7 +20,7 @@ COMPLEX_TEMPLATE T polygamma_(unsigned long n, T z) {
 
 #define POLYGAMMA_POLY_COEFFS ( \
     (1, 0),                     \
-    (0, -1),                   \
+    (0, -1),                    \
     (2, 0),                     \
     (-4, 0, -2),                \
     (8, 0, 16, 0),              \
@@ -38,6 +38,7 @@ COMPLEX_TEMPLATE T polygamma_(unsigned long n, T z) {
     (32768, 0, 536608768, 0, 84134068224, 0, 1594922762240, 0, 7048869314560, 0, 8885192097792, 0, 3099269660672, 0, 209865342976, 0))
 
 COMPLEX_TEMPLATE T polygamma(unsigned long n, T z) {
+    if (is_int(z) and is_real_nonpositive(z)) return cnan<T>();
     if (n==0) return digamma<scalar_t>(z);
     if (z.real() < 0) {
         T cospiz = cos(ltrl(M_PI) * z), poly;

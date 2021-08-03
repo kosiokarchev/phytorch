@@ -47,10 +47,10 @@ def make_dtype_tests(bases, name):
 CLOSE_KWARGS = dict(atol=1e-6, rtol=1e-6)
 
 
-def close_complex_nan(a, b, close_func=torch.allclose, **kwargs):
+def close_complex_nan(a, b, close_func=torch.allclose, accs=(torch.abs, torch.angle), **kwargs):
     return reduce(and_, (
         close_func(acc(a), acc(b), **{**CLOSE_KWARGS, 'equal_nan': True, **kwargs})
-        for acc in (torch.abs, torch.angle)))
+        for acc in accs))
 
 
 def n_tensors_strategy(n, elements: st.SearchStrategy = st.floats(min_value=1e-4, max_value=1e3), max_len=10):

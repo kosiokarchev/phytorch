@@ -84,7 +84,7 @@ class Polygamma(ComplexTorchFunction):
 
 gamma = with_complex_args(Gamma.apply)
 loggamma = with_complex_args(Loggamma.apply)
-digamma = with_complex_args(Digamma.apply)
+digamma = psi = with_complex_args(Digamma.apply)
 
 
 def polygamma(n: int, z: _TN) -> Tensor:

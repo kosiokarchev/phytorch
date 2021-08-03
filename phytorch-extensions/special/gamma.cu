@@ -15,7 +15,7 @@ COMPLEX_TEMPLATE inline T stirling(T z) {
 
 
 DEFINE_COMPLEX_FUNCTION(gamma, (z)) {
-    if (is_int(z) and is_real_nonpositive(z)) return numeric_limits<T>::infinity();
+    if (is_int(z) and is_real_nonpositive(z)) return cnan<T>();
     if (abs(z.real()) >= 18) {
         if (z.real() < 0)
             return ltrl(M_PI) / sin(ltrl(M_PI) * z) / gamma<scalar_t>(1 - z);

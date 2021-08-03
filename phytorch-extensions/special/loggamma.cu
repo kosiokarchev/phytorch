@@ -1,7 +1,7 @@
 #include "special.cuh"
 
 DEFINE_COMPLEX_FUNCTION(loggamma, (z)) {
-    if (is_int(z) and is_real_nonpositive(z)) return numeric_limits<T>::infinity();
+    if (is_int(z) and is_real_nonpositive(z)) return cnan<T>();
 
     T res;
     bool doconj = z.imag() < 0;
@@ -9,10 +9,9 @@ DEFINE_COMPLEX_FUNCTION(loggamma, (z)) {
 
     if (z.real() < -14 or z.imag() < -14) {
         res = ltrl(LOGPI) - loggamma<scalar_t>(1-z) - (
-                (z.imag() > 36.7 or z.imag() < -36.7) ?
-                ltrl(M_PI) * z.imag() - ltrl(0.6931471805599453094) + T(0, M_PI * (0.5 - z.real())) :
-                log(sin(z-floor(z.real()))) - T(0, M_PI * floor(z.real()))
-        );
+            (z.imag() > 36.7 or z.imag() < -36.7) ? (
+                ltrl(M_PI) * z.imag() - ltrl(0.6931471805599453094) + T(0, M_PI * (0.5 - z.real()))
+            ) : (log(sin(ltrl(M_PI) * (z-floor(z.real())))) - T(0, M_PI * floor(z.real()))));
     } else {
         T c = 1;
         scalar_t a = 0;

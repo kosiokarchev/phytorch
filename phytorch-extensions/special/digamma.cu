@@ -2,7 +2,6 @@
 #include "gammahead.h"
 
 DEFINE_COMPLEX_FUNCTION(digamma, (z)) {
-    // algorithm from https://www.mathworks.com/matlabcentral/fileexchange/978-special-functions-math-library
     if (is_int(z) and is_real_nonpositive(z)) return cnan<T>();
 
     if (z.real() < 0.5)

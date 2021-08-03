@@ -93,8 +93,9 @@ class RootsTest:
 
 
 class ForceNumericRootsTest(RootsTest):
+    @staticmethod
     @fixture(autouse=True, scope='class')
-    def _set_force_numeric(self):
+    def _set_force_numeric():
         # see e.g. https://github.com/pytest-dev/pytest/issues/363
         # for why this workaround is needed
         from _pytest.monkeypatch import MonkeyPatch

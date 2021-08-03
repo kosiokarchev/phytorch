@@ -26,5 +26,5 @@ DEFINE_COMPLEX_FUNCTION(deta1, (z)) {
 
 DEFINE_COMPLEX_FUNCTION(zeta, (z)) {
     if (z == ltrl(1)) return numeric_limits<scalar_t>::infinity();
-    return pow(ltrl(2), z) / (pow(ltrl(2), z) - 2) * deta1<scalar_t>(z);
+    return deta1<scalar_t>(z) / (1 - pow(ltrl(2), 1-z));
 }

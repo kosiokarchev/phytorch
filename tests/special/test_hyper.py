@@ -8,6 +8,7 @@ from tests.common import with_default_double
 
 
 cases = {
+    # https://github.com/scipy/scipy/blob/3c35f0a3abdd07c2d2b8f2f1528709d6a393498e/scipy/special/tests/test_basic.py#L2140
     hyp2f1: (
         (0.5, 1, 1.5, 0.2**2, 0.5 / 0.2 * log((1 + 0.2) / (1 - 0.2))),
         (0.5, 1, 1.5, -0.2**2, 1. / 0.2 * atan(0.2)),
