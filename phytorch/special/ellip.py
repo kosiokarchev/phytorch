@@ -2,6 +2,7 @@
 # TODO: move to c++ kernels?
 from typing import Optional
 
+import torch
 from torch import Tensor
 
 from .ellipr import elliprd, elliprf, elliprg, elliprj
@@ -124,7 +125,12 @@ class EllipEinc(ComplexTorchFunction):
 
     @staticmethod
     def _forward(ctx, m, c, *args) -> Tensor:
-        return where(~((c==1) & (m==1)), elliprf(c-1, c-m, c) - m * ellipdinc(None, m, c), 1)
+        # TODO: just do this in c...
+        return where(
+            ~cond if torch.is_tensor(cond := ((c==1) * (m==1))) else not cond,
+            elliprf(c-1, c-m, c) - m * ellipdinc(None, m, c),
+            1
+        )
 
         # https://dlmf.nist.gov/19.25.E11, but NaNs when c==1
         # return ((c-m) / c / (c-1+eps))**0.5 - (1-m)/3 * elliprd(c-m, c, c-1)

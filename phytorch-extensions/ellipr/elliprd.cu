@@ -3,6 +3,8 @@
 
 DEFINE_COMPLEX_FUNCTION(elliprd, (x, y, z)) {
     ELLIPR_CHECK_xyz
+    if (not z or (not x + not y + not z > 1)) return numeric_limits<T>::infinity();
+
     auto Am = (x + y + ltrl(3.)*z) / ltrl(5.);
     ELLIPR_HEADER(1./4.)
 

@@ -40,8 +40,9 @@ class MyBuildExtension(BuildExtension):
 setup(
     name='phytorch.extensions',
     ext_modules=[
-        CUDAExtension(folder, [str(_) for _ in filter(lambda _: _.suffix.lower() in ('.cpp', '.cu'), Path(folder).iterdir())],
-                      extra_compile_args={'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda', '--relocatable-device-code=true', '--gpu-architecture=sm_30']})
+        CUDAExtension(folder, [
+            str(_) for _ in filter(lambda _: (_.suffix.lower() in ('.cpp', '.cu') and not _.name.startswith('_')), Path(folder).iterdir())
+        ], extra_compile_args={'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda', '--relocatable-device-code=true', '--gpu-architecture=sm_30']})
         # for folder in ('ellipr', 'gamma', 'hyper', 'roots')
         for folder in (
             'ellipr', 'roots', 'special',

@@ -3,7 +3,7 @@ from operator import and_
 
 import torch
 from pytest import fixture
-from hypothesis import strategies as st
+from hypothesis import assume, strategies as st
 
 
 def with_default_double(func):
@@ -18,6 +18,7 @@ def with_default_double(func):
 
 class BaseDtypeTest:
     dtype: torch.dtype
+    cdtype: torch.dtype
     name: str
 
     @fixture(autouse=True, scope='class')
@@ -27,14 +28,20 @@ class BaseDtypeTest:
         yield
         torch.set_default_dtype(previous_dtype)
 
+    @fixture(scope='class')
+    def eps(self):
+        return torch.finfo(self.dtype).eps
+
 
 class BaseFloatTest(BaseDtypeTest):
     dtype = torch.float
+    cdtype = torch.cfloat
     name = 'Float'
 
 
 class BaseDoubleTest(BaseDtypeTest):
     dtype = torch.double
+    cdtype = torch.cdouble
     name = 'Double'
 
 
@@ -45,6 +52,16 @@ def make_dtype_tests(bases, name):
 
 
 CLOSE_KWARGS = dict(atol=1e-6, rtol=1e-6)
+JUST_FINITE = dict(allow_nan=False, allow_infinity=False)
+
+
+def nice_and_close(a, b, close_func=torch.allclose, **kwargs):
+    b = torch.as_tensor(b, dtype=a.dtype, device=a.device)
+    assume(not torch.isnan(a) and not torch.isnan(b))
+    return close_func(a, b, **{
+        'atol': max(1e-8, 100*torch.finfo(a.dtype).eps),
+        'rtol': max(1e-5, 100*torch.finfo(a.dtype).eps),
+        **kwargs})
 
 
 def close_complex_nan(a, b, close_func=torch.allclose, accs=(torch.abs, torch.angle), **kwargs):

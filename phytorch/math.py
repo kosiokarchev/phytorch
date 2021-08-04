@@ -15,6 +15,7 @@ def complexify(x):
 
 
 def where(cond, x, y):
+    y = torch.as_tensor(y, dtype=x.dtype, device=x.device) if torch.is_tensor(x) else y
     return (x.where(cond, torch.as_tensor(y, dtype=x.dtype, device=x.device))
             if torch.is_tensor(cond) else (x if cond else y))
 
