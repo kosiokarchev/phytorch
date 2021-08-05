@@ -7,54 +7,52 @@ from torch.autograd import Function
 from ..extensions import elliptic as _elliptic
 from ..utils._typing import _TN
 from ..utils.complex import with_complex_args
-from ..utils.function_context import TorchFunctionContext
+from ..utils.function_context import ComplexTorchFunction, TorchFunctionContext
 
 
 # noinspection PyMethodOverriding
-class Elliprf(Function):
+class Elliprf(ComplexTorchFunction):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
-        ctx.set_materialize_grads(False)
-        ctx.save_for_backward(x, y, z)
+    def saved_tensors(ctx, x, y, z):
+        return x, y, z
+
+    @staticmethod
+    def _forward(ctx, x, y, z, *args):
         return _elliptic.elliprf(x, y, z)
 
     @staticmethod
-    def backward(ctx: TorchFunctionContext, grad: Tensor) -> tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def backward(ctx, grad: Tensor) -> tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         return tuple(
             (-elliprd(*args[::-1][:-1], args[0]) / 6.).conj() * grad if nig else None
             for nig, args in zip(ctx.needs_input_grad, circular_shifts(ctx.saved_tensors))
         ) if grad is not None else 3*(None,)
 
 
-# noinspection PyMethodOverriding,PyAbstractClass
-class Elliprj(Function):
+# noinspection PyMethodOverriding
+class Elliprd(ComplexTorchFunction):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN, p: _TN) -> Tensor:
-        ctx.mark_non_differentiable(
-            ret := _elliptic.elliprj(x, y, z, p))
-        return ret
+    def _forward(ctx, x, y, z, *args):
+        return _elliptic.elliprd(x, y, z)
 
 
-# noinspection PyMethodOverriding,PyAbstractClass
-class Elliprd(Function):
+# noinspection PyMethodOverriding
+class Elliprg(ComplexTorchFunction):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
-        ctx.mark_non_differentiable(
-            ret := _elliptic.elliprd(x, y, z))
-        return ret
+    def _forward(ctx, x, y, z):
+        return _elliptic.elliprg(x, y, z)
 
 
-# noinspection PyMethodOverriding,PyAbstractClass
-class Elliprg(Function):
+# noinspection PyMethodOverriding
+class Elliprj(ComplexTorchFunction):
     @staticmethod
-    def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
-        ctx.mark_non_differentiable(
-            ret := _elliptic.elliprg(x, y, z))
-        return ret
+    def _forward(ctx, x, y, z, p, *args):
+        return _elliptic.elliprj(x, y, z, p)
 
 
-funcs = {E.__name__.lower(): E for E in (Elliprd, Elliprf, Elliprg, Elliprj)}
-globals().update({key: with_complex_args(val.apply) for key, val in funcs.items()})
+elliprd = with_complex_args(Elliprd.apply)
+elliprf = with_complex_args(Elliprf.apply)
+elliprg = with_complex_args(Elliprg.apply)
+elliprj = with_complex_args(Elliprj.apply)
 
 
 def elliprc(x: _TN, y: _TN) -> Tensor:
@@ -63,6 +61,6 @@ def elliprc(x: _TN, y: _TN) -> Tensor:
     return elliprf(x, y, y)
 
 
-__all__ = tuple(funcs.keys()) + ('elliprc',)
+__all__ = 'elliprc', 'elliprd', 'elliprf', 'elliprg', 'elliprj'
 
 # TODO: unsafe flag for elliprj

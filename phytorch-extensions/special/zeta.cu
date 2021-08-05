@@ -19,12 +19,15 @@
 #define LIST_TERM(r, data, i, elem) BOOST_PP_IF(i, +, ) ltrl(elem) * pow(ltrl(i+1), -z)
 
 DEFINE_COMPLEX_FUNCTION(deta1, (z)) {
+    if (z == ltrl(0)) return 0.5;
     if (z.real() < 0.5)
         return 2 * (1 - pow(ltrl(2), (z-1))) / (1 - pow(ltrl(2), z)) * pow(ltrl(M_PI), z-1) * z * sin(ltrl(M_PI) * z/2) * gamma<scalar_t>(-z) * deta1<scalar_t>(1-z);
     return BOOST_PP_SEQ_FOR_EACH_I(LIST_TERM, _, BOOST_PP_TUPLE_TO_SEQ(DETA_COEFFS));
 }
 
 DEFINE_COMPLEX_FUNCTION(zeta, (z)) {
+    if (z == TINF) return 1;
+    if (is_real_negative(z) and is_fint(z.real()/2)) return 0;
     if (z == ltrl(1)) return numeric_limits<scalar_t>::infinity();
     return deta1<scalar_t>(z) / (1 - pow(ltrl(2), 1-z));
 }

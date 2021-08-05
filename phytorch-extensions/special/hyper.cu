@@ -62,7 +62,7 @@ T hypsum(const std::array<T, p+q>& coeffs, const T& z) {
         if (abs(t) < numeric_limits<scalar_t>::epsilon())
             return s;
         if (k > 6000) {
-            printf("did not converge in 6000 terms...");
+            printf("did not converge in 6000 terms...\n");
             return cnan<scalar_t>();
         }
     }
@@ -104,6 +104,7 @@ DEFINE_COMPLEX_FUNCTION(hyp2f1, (a, b, c, z)) {
             a += pow(10, i) * PERTURBATION;
             b += 1.2 * pow(10, i) * PERTURBATION;
         }
+        printf("possible gamma overflow...\n");
         return cnan<T>();
     }
     if (abs(ltrl(1)-z) <= 0.75) { // https://dlmf.nist.gov/15.8.E4
@@ -120,6 +121,7 @@ DEFINE_COMPLEX_FUNCTION(hyp2f1, (a, b, c, z)) {
             a += pow(10, i) * PERTURBATION;
             b += 1.2 * pow(10, i) * PERTURBATION;
         }
+        printf("possible gamma overflow...\n");
         return cnan<T>();
     }
     if (abs(z/(z-ltrl(1))) <= 0.75) {  // https://dlmf.nist.gov/15.8.E1

@@ -27,8 +27,9 @@ template <typename T> __host__ __device__ T cnan() {
 #define is_real_nonpositive(a) (is_real(a) and is_nonpositive((a).real()))
 #define is_real_nonnegative(a) (is_real(a) and is_nonnegative((a).real()))
 #define is_real_negative(a) (is_real(a) and not is_nonnegative((a).real()))
-#define is_int(a) (is_real(a) and abs(round((a).real()) - (a).real()) < 100*numeric_limits<decltype(a)>::epsilon())  // TODO: is_int
-#define is_nonpositive_int(a) (is_int(a) and is_nonpositive(a.real()))
+#define is_fint(a) (abs(round(a) - (a)) < 100*numeric_limits<decltype(a)>::epsilon())  // TODO: is_int
+#define is_int(a) (is_real(a) and is_fint((a).real()))
+#define is_nonpositive_int(a) (is_int(a) and is_nonpositive((a).real()))
 #define are_conjugate(a, b) (conj(a) == (b))
 
 #define DEF_COMPLEX_CHECK template <typename T> __host__ __device__ bool

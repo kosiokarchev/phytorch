@@ -55,13 +55,21 @@ CLOSE_KWARGS = dict(atol=1e-6, rtol=1e-6)
 JUST_FINITE = dict(allow_nan=False, allow_infinity=False)
 
 
+def close(a, b, close_func=torch.allclose, **kwargs):
+    b = torch.as_tensor(b, dtype=a.dtype, device=a.device)
+    if torch.is_complex(a) and kwargs.get('equal_nan', True):
+        return (close(a.real, b.real, close_func, equal_nan=True, **kwargs) and
+                close(a.imag, b.imag, close_func, equal_nan=True, **kwargs))
+    return close_func(a, b, **{
+        'atol': max(1e-8, 100 * torch.finfo(a.dtype).eps),
+        'rtol': max(1e-5, 100 * torch.finfo(a.dtype).eps),
+        **kwargs})
+
+
 def nice_and_close(a, b, close_func=torch.allclose, **kwargs):
     b = torch.as_tensor(b, dtype=a.dtype, device=a.device)
     assume(not torch.isnan(a) and not torch.isnan(b))
-    return close_func(a, b, **{
-        'atol': max(1e-8, 100*torch.finfo(a.dtype).eps),
-        'rtol': max(1e-5, 100*torch.finfo(a.dtype).eps),
-        **kwargs})
+    return close(a, b, close_func, **kwargs)
 
 
 def close_complex_nan(a, b, close_func=torch.allclose, accs=(torch.abs, torch.angle), **kwargs):

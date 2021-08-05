@@ -12,6 +12,7 @@ class TorchFunctionContext(_ContextMethodMixin):
 
 
 class TorchFunction(torch.autograd.Function):
+    differentiable = True
     save_output: ClassVar[bool] = True
 
     @staticmethod
@@ -31,6 +32,8 @@ class TorchFunction(torch.autograd.Function):
             ctx.save_for_backward(*saved_tensors, output)
         else:
             ctx.save_for_backward(*saved_tensors)
+        if not cls.differentiable:
+            ctx.mark_non_differentiable(output)
         return output
 
     # TODO: Python 3.10: ArgSpec
@@ -62,6 +65,8 @@ class TorchFunction(torch.autograd.Function):
                 for gf in cls.gradfuncs]
             if cls.ninputs is None:
                 cls.ninputs = len(cls.gradfuncs)
+        else:
+            cls.differentiable = False
 
 
 class ComplexTorchFunction(TorchFunction):
