@@ -43,9 +43,8 @@ setup(
         CUDAExtension(folder, [
             str(_) for _ in filter(lambda _: (_.suffix.lower() in ('.cpp', '.cu') and not _.name.startswith('_')), Path(folder).iterdir())
         ], extra_compile_args={'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda', '--relocatable-device-code=true', '--gpu-architecture=sm_30']})
-        # for folder in ('ellipr', 'gamma', 'hyper', 'roots')
         for folder in (
-            'ellipr', 'roots', 'special',
+            'elliptic', 'roots', 'special',
         )
     ],
     cmdclass={'build_ext': MyBuildExtension}

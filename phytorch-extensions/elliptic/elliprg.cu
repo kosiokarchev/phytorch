@@ -1,4 +1,4 @@
-#include "ellipr.cuh"
+#include "elliptic.cuh"
 
 
 #define are_equal_negative(a, b) (is_real_negative(a) and is_real_negative(b) and (a).real() == (b).real())

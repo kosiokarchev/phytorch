@@ -19,7 +19,7 @@ def to_complex(tensor: Tensor):
 
 
 def as_complex_tensors(*args: Tensor):
-    return (to_complex(a) for a in map(torch.as_tensor, args))
+    return (to_complex(torch.as_tensor(a)) if a is not None else None for a in args)
 
 
 _T = TypeVar('_T')

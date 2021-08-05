@@ -40,3 +40,20 @@ DEFINE_COMPLEX_FUNCTION_H(elliprd, (x, y, z))
 DEFINE_COMPLEX_FUNCTION_H(elliprf, (x, y, z))
 DEFINE_COMPLEX_FUNCTION_H(elliprg, (x, y, z))
 DEFINE_COMPLEX_FUNCTION_H(elliprj, (x, y, z, p))
+
+DEFINE_COMPLEX_FUNCTION_H(ellipk, (m))
+DEFINE_COMPLEX_FUNCTION_H(ellipe, (m))
+DEFINE_COMPLEX_FUNCTION_H(ellipd, (m))
+DEFINE_COMPLEX_FUNCTION_H(ellippi, (n, m))
+
+DEFINE_COMPLEX_FUNCTION_H(csc2, (phi))
+
+DEFINE_COMPLEX_FUNCTION_H(ellipkinc_, (c, m))
+DEFINE_COMPLEX_FUNCTION_H(ellipeinc_, (c, m))
+DEFINE_COMPLEX_FUNCTION_H(ellipdinc_, (c, m))
+DEFINE_COMPLEX_FUNCTION_H(ellippiinc_, (n, c, m))
+
+DEFINE_COMPLEX_FUNCTION_H(ellipkinc, (phi, m))
+DEFINE_COMPLEX_FUNCTION_H(ellipeinc, (phi, m))
+DEFINE_COMPLEX_FUNCTION_H(ellipdinc, (phi, m))
+DEFINE_COMPLEX_FUNCTION_H(ellippiinc, (n, phi, m))

@@ -31,6 +31,14 @@ def csinc(x, eps=1e-8):
     return where(abs(x) > eps, (1 - sinc(x)) / (x*pi)**2, 1/6)
 
 
+def csc2(phi):
+    s2 = sin(phi)**2
+    try:
+        return where(abs(s2) > 1e-15, 1/s2, cmath.inf)
+    except ZeroDivisionError:
+        return cmath.inf
+
+
 def _overload(torchfunc, cmathfunc):
     def f(x):
         return (torchfunc if torch.is_tensor(x) else cmathfunc)(x)

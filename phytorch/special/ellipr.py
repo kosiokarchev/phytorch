@@ -4,7 +4,7 @@ from more_itertools import circular_shifts
 from torch import Tensor
 from torch.autograd import Function
 
-from ..extensions import ellipr as _ellipr
+from ..extensions import elliptic as _elliptic
 from ..utils._typing import _TN
 from ..utils.complex import with_complex_args
 from ..utils.function_context import TorchFunctionContext
@@ -16,7 +16,7 @@ class Elliprf(Function):
     def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
         ctx.set_materialize_grads(False)
         ctx.save_for_backward(x, y, z)
-        return _ellipr.elliprf(x, y, z)
+        return _elliptic.elliprf(x, y, z)
 
     @staticmethod
     def backward(ctx: TorchFunctionContext, grad: Tensor) -> tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
@@ -31,7 +31,7 @@ class Elliprj(Function):
     @staticmethod
     def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN, p: _TN) -> Tensor:
         ctx.mark_non_differentiable(
-            ret := _ellipr.elliprj(x, y, z, p))
+            ret := _elliptic.elliprj(x, y, z, p))
         return ret
 
 
@@ -40,7 +40,7 @@ class Elliprd(Function):
     @staticmethod
     def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
         ctx.mark_non_differentiable(
-            ret := _ellipr.elliprd(x, y, z))
+            ret := _elliptic.elliprd(x, y, z))
         return ret
 
 
@@ -49,7 +49,7 @@ class Elliprg(Function):
     @staticmethod
     def forward(ctx: TorchFunctionContext, x: _TN, y: _TN, z: _TN) -> Tensor:
         ctx.mark_non_differentiable(
-            ret := _ellipr.elliprg(x, y, z))
+            ret := _elliptic.elliprg(x, y, z))
         return ret
 
 

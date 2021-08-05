@@ -1,4 +1,4 @@
-#include "ellipr.cuh"
+#include "elliptic.cuh"
 
 
 DEFINE_COMPLEX_FUNCTION(elliprf, (x, y, z)) {

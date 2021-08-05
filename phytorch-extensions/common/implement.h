@@ -3,6 +3,8 @@
 #include "torch/extension.h"
 #include <ATen/TensorIterator.h>
 
+#include "preprocessor.h"
+
 
 template <int n>
 // auto implement(void (*func)(at::TensorIteratorBase&), std::array<torch::Tensor, n> inputs) {
@@ -18,3 +20,10 @@ auto implement(std::function<void(at::TensorIteratorBase&)> func, std::array<tor
     func(iter);
     return iter.output(0);
 }
+
+#define TORCH_IMPLEMENT(name, vars) \
+void name##_impl(at::TensorIteratorBase& iter); \
+auto torch_##name(VARS_TO_SIGNATURE((BOOST_PP_SEQ_FOR_EACH_I(PREPEND_data, const torch::Tensor&, BOOST_PP_TUPLE_TO_SEQ(vars)))))  { \
+    return implement<BOOST_PP_TUPLE_SIZE(vars)>(name##_impl, {BOOST_PP_TUPLE_ENUM(vars)});}
+
+#define MDEF(name) m.def(#name, &torch_##name, #name);

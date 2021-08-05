@@ -2,9 +2,9 @@
 #include "special.cuh"
 
 
-IMPLEMENT(gamma, (T z), (z), T)
-IMPLEMENT(loggamma, (T z), (z), T)
-IMPLEMENT(digamma, (T z), (z), T)
+IMPLEMENT_COMPLEX(gamma, (z))
+IMPLEMENT_COMPLEX(loggamma, (z))
+IMPLEMENT_COMPLEX(digamma, (z))
 
 // TODO: generalise fancy implementations
 void polygamma_impl(at::TensorIteratorBase& iter, const unsigned long& n) {
@@ -17,7 +17,7 @@ void polygamma_impl(at::TensorIteratorBase& iter, const unsigned long& n) {
         else at::native::gpu_kernel(iter, [n]GPU_LAMBDA (T z) -> T {return polygamma<scalar_t>(n, z);});});
 }
 
-IMPLEMENT(hyp2f1, (T a, T b, T c, T z), (a, b, c, z), T)
+IMPLEMENT_COMPLEX(hyp2f1, (a, b, c, z))
 
-IMPLEMENT(deta1, (T z), (z), T)
-IMPLEMENT(zeta, (T z), (z), T)
+IMPLEMENT_COMPLEX(deta1, (z))
+IMPLEMENT_COMPLEX(zeta, (z))

@@ -28,9 +28,9 @@ link_libraries(${TORCH_LIBRARIES})
 
 add_library(cephes SHARED cephes/cgamma.c cephes/hyp2f1.c)
 add_library(common INTERFACE common/Loops.h common/complex.h common/implement.cuh common/utils.h common/implement.h common/templating.h common/preprocessor.h common/moremath.h)
-add_library(ellipr SHARED ellipr/ellipr.cpp ellipr/ellipr_impl.cu ellipr/ellipr.cuh ellipr/elliprc.cu ellipr/elliprd.cu ellipr/elliprf.cu ellipr/elliprg.cu ellipr/elliprj.cu)
+add_library(elliptic SHARED elliptic/elliptic.cpp elliptic/elliptic_impl.cu elliptic/elliptic.cuh elliptic/elliprc.cu elliptic/elliprd.cu elliptic/elliprf.cu elliptic/elliprg.cu elliptic/elliprj.cu elliptic/ellip.cu)
 add_library(roots SHARED roots/roots.cpp roots/roots_impl.cu)
-add_library(special SHARED special/gamma.cu special/hyper.cu special/special.cuh special/special.cpp special/special_impl.cu special/zeta.cu special/loggamma.cu special/digamma.cu special/polygamma.cu special/gammahead.h)
+add_library(special SHARED special/gamma.cu special/hyper.cu special/special.cuh special/special.cpp special/special_impl.cu special/zeta.cu special/loggamma.cu special/digamma.cu special/polygamma.cu special/gammahead.h special/_digamma.cu)
 
 
-set_target_properties(ellipr PROPERTIES PREFIX "")
+set_target_properties(elliptic PROPERTIES PREFIX "")

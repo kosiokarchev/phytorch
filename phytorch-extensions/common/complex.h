@@ -13,6 +13,9 @@ using std::isfinite; using std::isnan; using std::isinf;
 using std::conj; using std::abs; using std::arg;
 using std::pow; using std::log2; using std::log; using std::sin; using std::cos; using std::tan;
 
+#define TINF numeric_limits<T>::infinity()
+#define TNAN numeric_limits<T>::quite_NaN()
+
 template <typename T> __host__ __device__ T cnan() {
     static auto ret = numeric_limits<T>::quiet_NaN();
     return ret;

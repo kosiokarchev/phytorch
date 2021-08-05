@@ -1,4 +1,4 @@
-from cmath import asin, asinh, atan, cos, inf, nan, pi, sin, sinh, tan
+from cmath import asinh, cos, inf, nan, pi, sin, sinh, tan
 
 import numpy as np
 import scipy.special as sp
@@ -10,25 +10,24 @@ from torch import isclose, isnan, tensor
 
 from phytorch.special.ellip import ellipd, ellipdinc, ellipe, ellipeinc, ellipk, ellipkinc, ellippi, ellippiinc
 from phytorch.special.ellipr import elliprc
-from tests.common import (BaseDoubleTest, BaseDtypeTest, BaseFloatTest, close_complex_nan, JUST_FINITE,
-                          make_dtype_tests,
-                          nice_and_close, with_default_double)
+from tests.common import (BaseDoubleTest, BaseDtypeTest, close_complex_nan, CLOSE_KWARGS, JUST_FINITE,
+                          make_dtype_tests, nice_and_close, with_default_double)
 
 
-# @with_default_double
-# def test_grid():
-#     # TODO: separate functions
-#     m, phi = torch.linspace(0, 1, 101), torch.linspace(0, pi/2, 101).unsqueeze(-1)
-#
-#     for ours, theirs, args in (
-#         (ellipk, sp.ellipk, (m,)),
-#         (ellipe, sp.ellipe, (m,)),
-#         (ellipkinc, sp.ellipkinc, (phi, m)),
-#         (ellipeinc, sp.ellipeinc, (phi, m)),
-#         (ellippi, (sp_ellippi := np.vectorize(lambda *a, **kw: float(mp.ellippi(*a, *kw)))), (m[:-1].unsqueeze(-2), m[:-1])),  # avoid edges
-#         (ellippiinc, sp_ellippi, (m[:-1].unsqueeze(-2).unsqueeze(-3), phi, m[:-1])),  # avoid edges
-#     ):
-#         assert torch.allclose(ours(*args).real, torch.as_tensor(theirs(*args)), **CLOSE_KWARGS, equal_nan=True)
+@with_default_double
+def test_grid():
+    # TODO: separate functions
+    m, phi = torch.linspace(0, 1, 101), torch.linspace(0, pi/2, 101).unsqueeze(-1)
+
+    for ours, theirs, args in (
+        (ellipk, sp.ellipk, (m,)),
+        (ellipe, sp.ellipe, (m,)),
+        (ellipkinc, sp.ellipkinc, (phi, m)),
+        (ellipeinc, sp.ellipeinc, (phi, m)),
+        (ellippi, (sp_ellippi := np.vectorize(lambda *a, **kw: float(mp.ellippi(*a, *kw)))), (m[:-1].unsqueeze(-2), m[:-1])),  # avoid edges
+        (ellippiinc, sp_ellippi, (m[:-1].unsqueeze(-2).unsqueeze(-3), phi, m[:-1])),  # avoid edges
+    ):
+        assert torch.allclose(ours(*args).real, torch.as_tensor(theirs(*args)), **CLOSE_KWARGS, equal_nan=True)
 
 
 # From the scipy.special test suite, unless otherwise stated:
@@ -43,11 +42,11 @@ cases = {
         ((-10,), 3.6391380384177689),
         ((0.0,), pi / 2),
         ((1.0,), 1.0),
-        ((2,), complex(mp.ellipe(2))),  # scipy does not handle complex
+        # TODO: properly analytically continue
+        ((2,), complex(mp.ellipe(2)).conjugate()),  # scipy does not handle complex
         ((nan,), nan),
-        # TODO: ellipe infinities
-        # ((-inf,), inf),
-        # ((inf,), inf*1j)
+        ((-inf,), inf),
+        ((inf,), complex(0, inf))
     ),
     ellipkinc: (
         ((45*pi/180, sin(20*pi/180)**2), 0.79398143),
@@ -57,7 +56,8 @@ cases = {
         ((pi / 2, 1.0), inf),
         ((pi / 2, -inf), 0.0),
         ((pi / 2, nan), nan),
-        ((pi / 2, 2), complex(mp.ellipf(pi / 2, 2))),  # scipy does not handle complex
+        # TODO: properly analytically continue
+        ((pi / 2, 2), complex(mp.ellipf(pi / 2, 2)).conjugate()),  # scipy does not handle complex
         ((0, 0.5), 0.0),
         ((inf, inf), nan),
         ((inf, -inf), nan),
@@ -75,18 +75,19 @@ cases = {
         ((0, 0.5), 0.0),
         ((pi / 2, 0.0), pi / 2),
         ((pi / 2, 1.0), 1.0),
-        ((pi / 2, 2), complex(mp.ellipe(pi / 2, 2))),  # scipy does not handle complex
-        ((pi / 2, np.nan), np.nan),
+        # TODO: properly analytically continue
+        ((pi / 2, 2), complex(mp.ellipe(pi / 2, 2)).conjugate()),  # scipy does not handle complex
+        ((pi / 2, nan), nan),
         # TODO: ellipeinc infinities
-        # ((pi / 2, -np.inf), np.inf),
-        # ((np.inf, 0.5), np.inf),
-        # ((-np.inf, 0.5), -np.inf),
-        # ((np.inf, -np.inf), np.inf),
-        # ((-np.inf, -np.inf), -np.inf),
-        # ((np.inf, np.inf), np.nan),
-        # ((-np.inf, np.inf), np.nan),
-        # ((np.nan, 0.5), np.nan),
-        # ((np.nan, np.nan), np.nan),
+        # ((pi / 2, -inf), inf),
+        # ((inf, 0.5), inf),
+        # ((-inf, 0.5), -inf),
+        # ((inf, -inf), inf),
+        # ((-inf, -inf), -inf),
+        ((inf, inf), nan),
+        ((-inf, inf), nan),
+        ((nan, 0.5), nan),
+        ((nan, nan), nan),
     )
 }
 
@@ -105,7 +106,7 @@ class EllipCasesTest(BaseDtypeTest):
 globals().update(make_dtype_tests((EllipCasesTest,), 'EllipCases'))
 
 
-class TestEllipPi2:
+class EllipPi2Test:
     @staticmethod
     @given(st.floats(0, 1))
     def test(m):
@@ -119,7 +120,7 @@ class TestEllipPi2:
         assert isclose(ellippi(n, m), ellippiinc(n, pi/2, m))
 
 
-globals().update(make_dtype_tests((TestEllipPi2,), 'EllipPi2'))
+globals().update(make_dtype_tests((EllipPi2Test,), 'EllipPi2'))
 
 
 # TODO: connections using float
@@ -182,19 +183,16 @@ class TestEllipConnections(BaseDoubleTest):
         mm = 1-m
         kp = mm**0.5
 
-        for left, right in (
-            # https://dlmf.nist.gov/19.7.E2
-            (ellipk((+1j * k / kp)**2), kp * ellipk(m)),
-            (ellipk((-1j * kp / k)**2), k * ellipk(mm)),
-            (ellipe((+1j * k / kp)**2), ellipe(m) / kp),
-            (ellipe((-1j * kp / k)**2), ellipe(mm) / k),
-            # https://dlmf.nist.gov/19.7.E3
-            (ellipk(1/m), k * (ellipk(m) + (-1 if m.imag >= 0 else 1) * 1j*ellipk(mm))),
-            (ellipk(1/mm), kp * (ellipk(mm) + (-1 if m.imag <= 0 else 1) * 1j*ellipk(m))),
-            (ellipe(1/m), (ellipe(m) + (1 if m.imag >= 0 else -1) * 1j*ellipe(mm) - (mm*ellipk(m) + (1 if m.imag >= 0 else -1) * 1j*m*ellipk(mm))) / k),
-            (ellipe(1/mm), (ellipe(mm) + (-1 if m.imag >= 0 else 1) * 1j*ellipe(m) - (m*ellipk(mm) + (-1 if m.imag >= 0 else 1) * 1j*mm*ellipk(m))) / kp)
-        ):
-            assert nice_and_close(left, right)
+        # https://dlmf.nist.gov/19.7.E2
+        assert nice_and_close(ellipk((+1j * k / kp)**2), kp * ellipk(m))
+        assert nice_and_close(ellipk((-1j * kp / k)**2), k * ellipk(mm))
+        assert nice_and_close(ellipe((+1j * k / kp)**2), ellipe(m) / kp)
+        assert nice_and_close(ellipe((-1j * kp / k)**2), ellipe(mm) / k)
+        # https://dlmf.nist.gov/19.7.E3
+        assert nice_and_close(ellipk(1/m), k * (ellipk(m) - (1 if m.imag > 0 else -1) * 1j*ellipk(mm)))
+        assert nice_and_close(ellipk(1/mm), kp * (ellipk(mm) + (1 if m.imag >= 0 else -1) * 1j*ellipk(m)))
+        assert nice_and_close(ellipe(1/m), (ellipe(m) + (1 if m.imag > 0 else -1) * 1j*ellipe(mm) - (mm*ellipk(m) + (1 if m.imag > 0 else -1) * 1j*m*ellipk(mm))) / k)
+        assert nice_and_close(ellipe(1/mm), (ellipe(mm) - (1 if m.imag > 0 else -1) * 1j*ellipe(m) - (m*ellipk(mm) - (1 if m.imag > 0 else -1) * 1j*mm*ellipk(m))) / kp)
 
     @staticmethod
     @given(st.floats(**JUST_FINITE), st.floats(1e-9, 1), st.floats(1e-9, 1))
@@ -207,13 +205,15 @@ class TestEllipConnections(BaseDoubleTest):
         ctheta = (1 + m*sin(phi)**2) * kappap**2 / sin(phi)**2
         n1 = (n+m) * kappap**2
 
-        # TODO: properly analytically continue
         # https://dlmf.nist.gov/19.7.E4
-        cbeta = m / sin(phi)**2
-        assert nice_and_close(ellipkinc(phi, 1/m), m**0.5 * ellipkinc(None, m, cbeta))
-        assert nice_and_close(ellipeinc(phi, 1/m), (ellipeinc(None, m, cbeta) - (1-m)*ellipkinc(None, m, cbeta)) / m**0.5)
-        assert nice_and_close(ellippiinc(n, phi, 1/m), m**0.5 * ellippiinc(m*n, None, m, cbeta))
-
+        cbeta = m / sin(phi+0j)**2
+        for left, right in (
+            (ellipkinc(phi, 1/m), (m**0.5 * ellipkinc(None, m, cbeta))),
+            (ellipeinc(phi, 1/m), (ellipeinc(None, m, cbeta) - (1-m)*ellipkinc(None, m, cbeta)) / m**0.5),
+            (ellippiinc(n, phi, 1/m), m**0.5 * ellippiinc(m*n, None, m, cbeta))
+        ):
+            # TODO: properly analytically continue
+            assert nice_and_close(left.real, right.real)
 
         # https://dlmf.nist.gov/19.7.E5
         assert nice_and_close(ellipkinc(phi, -m), kappap * ellipkinc(None, mu, ctheta))
@@ -221,7 +221,7 @@ class TestEllipConnections(BaseDoubleTest):
         assert nice_and_close(ellippiinc(n, phi, -m), (kappap / n1) * (mu * ellipkinc(None, mu, ctheta) + kappap**2*n*ellippiinc(n1, None, mu, ctheta)))
 
     @staticmethod
-    @given(st.floats(-100, 100, **JUST_FINITE), st.floats(1e-9, 1), st.floats(1e-9, 1))
+    @given(st.floats(-10, 10, **JUST_FINITE), st.floats(1e-9, 1), st.floats(1e-9, 1))
     def test_argument_transformations(phi, n, m):
         # https://dlmf.nist.gov/19.7.E7
         assume(sinh(phi) != 0)
