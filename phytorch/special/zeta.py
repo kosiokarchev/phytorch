@@ -1,10 +1,10 @@
 from ..extensions import special as _special
 from ..utils.complex import with_complex_args
-from ..utils.function_context import ComplexTorchFunction
+from ..utils.function_context import CargsMixin
 
 
 # noinspection PyMethodOverriding
-class Zeta(ComplexTorchFunction):
+class Zeta(CargsMixin):
     @staticmethod
     def _forward(ctx, z, *args):
         return _special.zeta(z)

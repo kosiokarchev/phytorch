@@ -5,105 +5,154 @@ import scipy.special as sp
 import torch
 from hypothesis import assume, given, strategies as st
 from mpmath import mp
-from pytest import mark
-from torch import isclose, isnan, tensor
+from pytest import fixture, mark
+from torch import isclose, isnan
+from torch.autograd import gradcheck, gradgradcheck
 
 from phytorch.special.ellip import ellipd, ellipdinc, ellipe, ellipeinc, ellipk, ellipkinc, ellippi, ellippiinc
 from phytorch.special.ellipr import elliprc
-from tests.common import (BaseDoubleTest, BaseDtypeTest, close_complex_nan, CLOSE_KWARGS, JUST_FINITE,
-                          make_dtype_tests, nice_and_close, with_default_double)
+from tests.common import (BaseCasesTest, close, DoubleDtypeTest, JUST_FINITE, make_dtype_tests, nice_and_close)
 
 
-@with_default_double
-def test_grid():
-    # TODO: separate functions
-    m, phi = torch.linspace(0, 1, 101), torch.linspace(0, pi/2, 101).unsqueeze(-1)
-
-    for ours, theirs, args in (
-        (ellipk, sp.ellipk, (m,)),
-        (ellipe, sp.ellipe, (m,)),
-        (ellipkinc, sp.ellipkinc, (phi, m)),
-        (ellipeinc, sp.ellipeinc, (phi, m)),
-        (ellippi, (sp_ellippi := np.vectorize(lambda *a, **kw: float(mp.ellippi(*a, *kw)))), (m[:-1].unsqueeze(-2), m[:-1])),  # avoid edges
-        (ellippiinc, sp_ellippi, (m[:-1].unsqueeze(-2).unsqueeze(-3), phi, m[:-1])),  # avoid edges
-    ):
-        assert torch.allclose(ours(*args).real, torch.as_tensor(theirs(*args)), **CLOSE_KWARGS, equal_nan=True)
+COMPLETE = ellipk, ellipe, ellipd, ellippi
+INCOMPLETE = ellipkinc, ellipeinc, ellipdinc, ellippiinc
+THIRD_TYPE = (ellippi, ellippiinc)
 
 
-# From the scipy.special test suite, unless otherwise stated:
+sp_ellipd = lambda m: (lambda m: np.where(m!=0, (sp.ellipk(m) - sp.ellipe(m)) / m, pi/4))(np.array(m))
+sp_ellipdinc = lambda phi, m: (lambda phi, m: np.where(m!=0, (sp.ellipkinc(phi, m) - sp.ellipeinc(phi, m)) / m, (phi - np.sin(phi)*np.cos(phi))/2))(np.array(phi), np.array(m))
 
-cases = {
-    ellipk: (
-        ((0.2,), 1.659623598610528),
-        ((-10,), 0.7908718902387385)
-    ),
-    ellipe: (
-        ((0.2,), 1.4890350580958529),
-        ((-10,), 3.6391380384177689),
-        ((0.0,), pi / 2),
-        ((1.0,), 1.0),
-        # TODO: properly analytically continue
-        ((2,), complex(mp.ellipe(2)).conjugate()),  # scipy does not handle complex
-        ((nan,), nan),
-        ((-inf,), inf),
-        ((inf,), complex(0, inf))
-    ),
-    ellipkinc: (
-        ((45*pi/180, sin(20*pi/180)**2), 0.79398143),
-        ((0.38974112035318718, 1), 0.4),
-        ((1.5707, -10), 0.79084284661724946),
-        ((pi / 2, 0.0), pi / 2),
-        ((pi / 2, 1.0), inf),
-        ((pi / 2, -inf), 0.0),
-        ((pi / 2, nan), nan),
-        # TODO: properly analytically continue
-        ((pi / 2, 2), complex(mp.ellipf(pi / 2, 2)).conjugate()),  # scipy does not handle complex
-        ((0, 0.5), 0.0),
-        ((inf, inf), nan),
-        ((inf, -inf), nan),
-        ((-inf, -inf), nan),
-        ((-inf, inf), nan),
-        ((nan, 0.5), nan),
-        ((nan, nan), nan),
-        # in our convention, ellipf is periodic in phi, so those don't hold
-        # ((inf, 0.5), inf),
-        # ((-inf, 0.5), -inf),
-    ),
-    ellipeinc: (
-        ((1.5707, -10), 3.6388185585822876),
-        ((35*pi/180, sin(52*pi/180)**2), 0.58823065),
-        ((0, 0.5), 0.0),
-        ((pi / 2, 0.0), pi / 2),
-        ((pi / 2, 1.0), 1.0),
-        # TODO: properly analytically continue
-        ((pi / 2, 2), complex(mp.ellipe(pi / 2, 2)).conjugate()),  # scipy does not handle complex
-        ((pi / 2, nan), nan),
-        # TODO: ellipeinc infinities
-        # ((pi / 2, -inf), inf),
-        # ((inf, 0.5), inf),
-        # ((-inf, 0.5), -inf),
-        # ((inf, -inf), inf),
-        # ((-inf, -inf), -inf),
-        ((inf, inf), nan),
-        ((-inf, inf), nan),
-        ((nan, 0.5), nan),
-        ((nan, nan), nan),
-    )
-}
+@np.vectorize
+def sp_ellippi(n, m):
+    return float(mp.ellippi(n, m))
 
 
-class EllipCasesTest(BaseDtypeTest):
-    @with_default_double
-    @mark.parametrize('func, args, truth', tuple(
-        (func, args, truth)
-        for func, vals in cases.items() for args, truth in vals
+@np.vectorize
+def sp_ellippiinc(n, phi, m):
+    return float(mp.ellippi(n, m) if phi == pi/2 else mp.ellippi(n, phi, m))
+
+
+class TestEllipGrid(DoubleDtypeTest):
+    @fixture(scope='class')
+    def m(self):
+        return torch.linspace(0, 1, 11)
+
+    @fixture(scope='class')
+    def phi(self):
+        return torch.linspace(0, pi/2, 11)[:, None]
+
+    @fixture(scope='class')
+    def func_with_args(self, request, m, phi):
+        ret = [m] if request.param in COMPLETE else [phi, m]
+        return request.param, [m.reshape(-1, *len(ret)*(1,))] + ret if request.param in THIRD_TYPE else ret
+
+    funcmap = dict((
+        (ellipk, sp.ellipk),
+        (ellipe, sp.ellipe),
+        (ellipd, sp_ellipd),
+        (ellippi, sp_ellippi),
+        (ellipkinc, sp.ellipkinc),
+        (ellipeinc, sp.ellipeinc),
+        (ellipdinc, sp_ellipdinc),
+        (ellippiinc, sp_ellippiinc),
     ))
-    def test_case(self, func, args, truth):
-        print(func, args, truth)
-        assert close_complex_nan(res := func(*args), tensor(truth, dtype=res.dtype))
+
+    @mark.parametrize('func_with_args, theirs', funcmap.items(), indirect=['func_with_args'])
+    def test_values(self, func_with_args, theirs):
+        ours, args = func_with_args
+        assert close(ours(*args).real, theirs(*args))
+
+    @mark.parametrize('func_with_args', funcmap.keys(), indirect=['func_with_args'])
+    def test_grads(self, func_with_args):
+        func, args = func_with_args
+
+        if func in THIRD_TYPE:
+            args[0] = args[0][1:-1]  # n in (0, 1), n != m
+
+            # derivatives are undefined when n == m
+            # could be smaller (1e-6), but spoils gradgradcheck in fast_mode
+            args[0] = args[0] + 1e-2
+
+        args[-1] = args[-1][:-1]  # m in [0, 1)
+
+        if func in INCOMPLETE:
+            args[-2] = args[-2][1:-1]  # phi in (0, pi/2)
+
+        args = [arg.clone().requires_grad_(True) for arg in args]
+
+        assert gradcheck(func, args, fast_mode=True, check_batched_grad=True)
+
+        if func in INCOMPLETE:
+            # Check only other gradients at phi in {0, pi/2}
+            _args = args[:]
+            _args[-2] = torch.tensor((0, pi/2))[:, None]
+            assert gradcheck(func, _args, fast_mode=True)
+
+        _args = args[:]
+        _args[-1] = args[-1][1:]
+        assert gradgradcheck(func, _args, fast_mode=True, check_batched_grad=True)
 
 
-globals().update(make_dtype_tests((EllipCasesTest,), 'EllipCases'))
+class TestEllipCases(DoubleDtypeTest, BaseCasesTest):
+    # From the scipy.special test suite, unless otherwise stated:
+    test_case = BaseCasesTest.parametrize({
+        ellipk: (
+            ((0.2,), 1.659623598610528),
+            ((-10,), 0.7908718902387385)
+        ),
+        ellipe: (
+            ((0.2,), 1.4890350580958529),
+            ((-10,), 3.6391380384177689),
+            ((0.0,), pi / 2),
+            ((1.0,), 1.0),
+            # TODO: properly analytically continue
+            ((2,), complex(mp.ellipe(2)).conjugate()),  # scipy does not handle complex
+            ((nan,), nan),
+            ((-inf,), inf),
+            ((inf,), complex(0, inf))
+        ),
+        ellipkinc: (
+            ((45 * pi / 180, sin(20 * pi / 180)**2), 0.79398143),
+            ((0.38974112035318718, 1), 0.4),
+            ((1.5707, -10), 0.79084284661724946),
+            ((pi / 2, 0.0), pi / 2),
+            ((pi / 2, 1.0), inf),
+            ((pi / 2, -inf), 0.0),
+            ((pi / 2, nan), nan),
+            # TODO: properly analytically continue
+            ((pi / 2, 2), complex(mp.ellipf(pi / 2, 2)).conjugate()),  # scipy does not handle complex
+            ((0, 0.5), 0.0),
+            ((inf, inf), nan),
+            ((inf, -inf), nan),
+            ((-inf, -inf), nan),
+            ((-inf, inf), nan),
+            ((nan, 0.5), nan),
+            ((nan, nan), nan),
+            # in our convention, ellipf is periodic in phi, so those don't hold
+            # ((inf, 0.5), inf),
+            # ((-inf, 0.5), -inf),
+        ),
+        ellipeinc: (
+            ((1.5707, -10), 3.6388185585822876),
+            ((35 * pi / 180, sin(52 * pi / 180)**2), 0.58823065),
+            ((0, 0.5), 0.0),
+            ((pi / 2, 0.0), pi / 2),
+            ((pi / 2, 1.0), 1.0),
+            # TODO: properly analytically continue
+            ((pi / 2, 2), complex(mp.ellipe(pi / 2, 2)).conjugate()),  # scipy does not handle complex
+            ((pi / 2, nan), nan),
+            # TODO: ellipeinc infinities
+            # ((pi / 2, -inf), inf),
+            # ((inf, 0.5), inf),
+            # ((-inf, 0.5), -inf),
+            # ((inf, -inf), inf),
+            # ((-inf, -inf), -inf),
+            ((inf, inf), nan),
+            ((-inf, inf), nan),
+            ((nan, 0.5), nan),
+            ((nan, nan), nan),
+        )
+    })
 
 
 class EllipPi2Test:
@@ -124,7 +173,7 @@ globals().update(make_dtype_tests((EllipPi2Test,), 'EllipPi2'))
 
 
 # TODO: connections using float
-class TestEllipConnections(BaseDoubleTest):
+class TestEllipConnections(DoubleDtypeTest):
     @staticmethod
     @given(st.floats(0, 1, exclude_max=True))
     def test_ellippi_m_equals_n(m):
@@ -233,9 +282,6 @@ class TestEllipConnections(BaseDoubleTest):
         ):
             # TODO: properly analytically continue
             assert nice_and_close(abs(left.imag), abs(right.real))
-
-
-# TODO: test ellipd
 
 
 # class TestEllip:

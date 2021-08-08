@@ -3,11 +3,11 @@ from torch import Tensor
 from ..extensions import special as _special
 from ..utils._typing import _TN
 from ..utils.complex import as_complex_tensors, with_complex_args
-from ..utils.function_context import ComplexTorchFunction
+from ..utils.function_context import CargsMixin
 
 
 # noinspection PyMethodOverriding,PyUnusedLocal
-class Gamma(ComplexTorchFunction):
+class Gamma(CargsMixin):
     @staticmethod
     def saved_tensors(ctx, z):
         return z,
@@ -24,7 +24,7 @@ class Gamma(ComplexTorchFunction):
 
 
 # noinspection PyMethodOverriding,PyUnusedLocal
-class Loggamma(ComplexTorchFunction):
+class Loggamma(CargsMixin):
     save_output = False
 
     @staticmethod
@@ -43,7 +43,7 @@ class Loggamma(ComplexTorchFunction):
 
 
 # noinspection PyUnusedLocal,PyMethodOverriding
-class Digamma(ComplexTorchFunction):
+class Digamma(CargsMixin):
     save_output = False
 
     @staticmethod
@@ -62,7 +62,7 @@ class Digamma(ComplexTorchFunction):
 
 
 # noinspection PyUnusedLocal,PyMethodOverriding
-class Polygamma(ComplexTorchFunction):
+class Polygamma(CargsMixin):
     save_output = False
 
     @staticmethod

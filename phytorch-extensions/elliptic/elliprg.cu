@@ -6,11 +6,11 @@
 DEFINE_COMPLEX_FUNCTION(elliprg, (x, y, z)) {
     switch (not x + not y + not z) {
         case 3:
-            return (x+y+z) * ltrl(0.);
+            return (x+y+z) * ltrl(0);
         case 2:
-            if (x) return sqrt(x) / ltrl(2.);
-            if (y) return sqrt(y) / ltrl(2.);
-            return sqrt(z) / ltrl(2.);
+            if (x) return sqrt(x) / ltrl(2);
+            if (y) return sqrt(y) / ltrl(2);
+            return sqrt(z) / ltrl(2);
         case 1:
             if (not z) std::swap(x, z);
     }

@@ -12,6 +12,10 @@ complex_typemap = {
 }
 
 
+def get_default_complex_dtype():
+    return complex_typemap[torch.get_default_dtype()]
+
+
 def to_complex(tensor: Tensor):
     return tensor if torch.is_complex(tensor) else torch.complex(
         tensor := tensor if torch.is_floating_point(tensor) else tensor.to(torch.get_default_dtype()),

@@ -20,6 +20,7 @@ DEFINE_COMPLEX_FUNCTION(ellipd, (m)) {
 }
 
 DEFINE_COMPLEX_FUNCTION(ellippi, (n, m)) {
+    if (n == ltrl(0)) return ellipk<scalar_t>(m);
     return ellipk<scalar_t>(m) + n / 3 * elliprj<scalar_t, T>(0, 1-m, 1, 1-n);
 }
 
@@ -37,7 +38,8 @@ DEFINE_COMPLEX_FUNCTION(ellipdinc_, (c, m)) {
 }
 
 DEFINE_COMPLEX_FUNCTION(ellippiinc_, (n, c, m)) {
-    return ellipkinc_<scalar_t>(c, m) + n * elliprj<scalar_t>(c-1, c-m, c, c-n) / 3;
+    if (n == ltrl(0)) return ellipkinc_<scalar_t>(c, m);
+    return ellipkinc_<scalar_t>(c, m) + n / 3 * elliprj<scalar_t>(c-1, c-m, c, c-n);
 }
 
 DEFINE_COMPLEX_FUNCTION(ellipkinc, (phi, m)) {

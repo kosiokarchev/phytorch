@@ -8,14 +8,14 @@ DEFINE_COMPLEX_FUNCTION(elliprj, (x, y, z, p)) {
 
     // see Carlson (1995) for the following condition
     if (not (
-            (x.real() >= 0 and y.real() >= 0 and z.real() >= 0 and p.real() > 0)
-            or (p and (
-                    (is_real_nonnegative(x) and is_real_nonnegative(y) and is_real_nonnegative(z))
-                    or (is_real_nonnegative(x) and are_conjugate(y, z) and y)
-                    or (is_real_nonnegative(y) and are_conjugate(z, x) and z)
-                    or (is_real_nonnegative(z) and are_conjugate(x, y) and x)
-            ))
-            or (x == p or y == p or z == p)  // last paragraph of algorithm
+        (x.real() >= 0 and y.real() >= 0 and z.real() >= 0 and p.real() > 0)
+        or (p and (
+            (is_real_nonnegative(x) and is_real_nonnegative(y) and is_real_nonnegative(z))
+            or (is_real_nonnegative(x) and are_conjugate(y, z) and y)
+            or (is_real_nonnegative(y) and are_conjugate(z, x) and z)
+            or (is_real_nonnegative(z) and are_conjugate(x, y) and x)
+        ))
+        or (x == p or y == p or z == p)  // last paragraph of algorithm
     )) return cnan<T>();
 
     // The following is the implementation of the above in mpmath:
