@@ -19,16 +19,15 @@ class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
     # TODO: do we really need __init_subclass__?!
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__()
+
         rednn = SymbolicEllipticReduction.get(cls._epoly_degree, cls._epoly_degree)
-        cls._integral_comoving_distance = staticmethod(rednn.desymbolise(rednn.Ie(0)))
         redn1n = SymbolicEllipticReduction.get(cls._epoly_degree+1, cls._epoly_degree)
-        # TODO: unhack h=3
-        #    would have redn1n.Ie(-cls._epoly_degree-1) instead of h
-        cls._integral_lookback_time = staticmethod(redn1n.desymbolise(redn1n.Ie(-redn1n.h-1)))
-        if cls._epoly_degree != 3:
-            cls._integral_absorption_distance = staticmethod(redn1n.desymbolise(redn1n.Im(
-                cls._epoly_degree*(0,) + (2,)
-            )))
+
+        cls._integral_comoving_distance = staticmethod(rednn.desymbolise(rednn.Ie(0)))
+        cls._integral_lookback_time = staticmethod(redn1n.desymbolise(redn1n.Ie(-cls._epoly_degree-1)))
+        cls._integral_absorption_distance = staticmethod(redn1n.desymbolise(redn1n.Im(
+            cls._epoly_degree*(0,) + (2,)
+        )))
 
     def lookback_time_dimless(self, z: _TN) -> _TN:
         return self._fix_dimless(self._integral_lookback_time(

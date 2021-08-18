@@ -32,9 +32,7 @@ class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
 
 
 class LambdaCDM(AnalyticFLRWDriver, BaseAnalyticLambdaCDM):
-    # TODO: unhack h=3
-    def absoprtion_distance_dimless(self, z: _TN) -> _TN:
-        raise NotImplementedError
+    pass
 
 
 class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
