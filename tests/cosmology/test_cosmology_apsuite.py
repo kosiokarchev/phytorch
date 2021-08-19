@@ -303,7 +303,6 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         z, dm, da, dl = (tensor(_, dtype=torch.get_default_dtype())
                          for _ in np.loadtxt(StringIO(data), unpack=True))
 
-        # TODO: ER x=y
         assert close(cosmo.comoving_transverse_distance(z).to(Mpc).value, dm)
         assert close(cosmo.angular_diameter_distance(z).to(Mpc).value, da)
         assert close(cosmo.luminosity_distance(z).to(Mpc).value, dl)
@@ -330,7 +329,6 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         with pytest.raises(RuntimeError):
             cosmo.comoving_distance_z1z2(tensor((1, 2)), tensor((3, 4, 5)))
 
-        # TODO: ER x<y
         assert cosmo.comoving_distance_z1z2(1, 2) == - cosmo.comoving_distance_z1z2(2, 1)
         assert close(
             cosmo.comoving_distance_z1z2(tensor([0, 0, 2, 0.5, 1]), tensor([2, 1, 1, 2.5, 1.1])).to(Mpc).value,
@@ -346,7 +344,6 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         cosmo = self.flat_cosmo_cls()
         cosmo.Om0 = Om0
 
-        # TODO: x=y
         assert close(cosmo.comoving_distance(0).to(Mpc).value, 0)
         assert close(cosmo.comoving_distance(1).to(Mpc).value, val)
 
@@ -367,7 +364,6 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
 
         cosmo = self.flat_cosmo_cls()
         cosmo.Om0 = 1.5
-        # TODO: ER x<y
         assert close(
             cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value,
             [2202.72682564, 1559.51679971, -643.21002593, 1408.36365679, 85.09286258]
@@ -377,7 +373,6 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
 
         cosmo = self.cosmo_cls()
         cosmo.Om0, cosmo.Ode0 = 0.3, 0.5
-        # TODO: ER x<y
         assert close(
             cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value,
             [3535.931375645655, 2226.430046551708, -1208.6817970036532, 2595.567367601969, 151.36592003406884]
@@ -385,7 +380,6 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
 
         cosmo = self.cosmo_cls()
         cosmo.Om0, cosmo.Ode0 = 1, 0.2
-        # TODO: ER x<y, x=y
         assert close(
             cosmo.comoving_transverse_distance_z1z2(0.1, tensor([0, 0.1, 0.2, 0.5, 1.1, 2])).to(Mpc).value,
             [-281.31602666724865, 0, 248.58093707820436, 843.9331377460543, 1618.6104987686672, 2287.5626543279927]
@@ -399,14 +393,10 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
             cosmo.angular_diameter_distance_z1z2(tensor((1, 2)), tensor((3, 4, 5)))
 
         assert close(cosmo.angular_diameter_distance_z1z2(1, 2).to(Mpc).value, 646.22968662822018)
-
-        # TODO: ER x<y
         assert close(
             cosmo.angular_diameter_distance_z1z2(tensor([0, 0, 2, 0.5, 1]), tensor([2, 1, 1, 2.5, 1.1])).to(Mpc).value,
             [1760.0628637762106, 1670.7497657219858, -969.34452994, 1159.0970895962193, 115.72768186186921]
         )
-
-        # TODO: ER x=y
         assert close(
             cosmo.angular_diameter_distance_z1z2(0.1, tensor([0.1, 0.2, 0.5, 1.1, 2])).to(Mpc).value,
             [0, 332.09893173, 986.35635069, 1508.37010062, 1621.07937976]

@@ -131,13 +131,22 @@ class EllipticReduction:
     def Y(self):
         return XorY(self.a, self.b, self.y)
 
+    @cached_property
+    def xmy(self):
+        return self.x - self.y
+
+    @cached_property
+    def xmy2(self):
+        return self.xmy**2
+
     @cache
     def U2(self, i: int, j: int):
+        # (4.12)
         k, l = self.idx_set - {i, j}
         return (
             self.X[i] * self.X[j] * self.Y[k] * self.Y[l]
             + self.Y[i] * self.Y[j] * self.X[k] * self.X[l]
-        )**2 / (self.x - self.y)**2
+        )**2
         # if j < i:
         #     return self.U2(j, i)
         # elif i==3 and j==4:
@@ -151,41 +160,53 @@ class EllipticReduction:
 
     @cache
     def U2nu(self, i: int, nu: int):
+        # (4.15)
         j, k, l = self.idx_set - {i}
-        return self.U2(i, j) - self.d[i, k] * self.d[i, l] * self.d[j, nu] / self.d[i, nu]
+        return self.U2(i, j) - self.xmy2 * self.d[i, k] * self.d[i, l] * self.d[j, nu] / self.d[i, nu]
 
     @cache
     def S2(self, i, nu):
+        # (4.16)
         j, k, l = self.idx_set - {i}
         return (
             self.X[j]*self.X[k]*self.X[l] / self.X[i] * self.Y[nu]**2
             + self.Y[j]*self.Y[k]*self.Y[l] / self.Y[i] * self.X[nu]**2
-        )**2 / (self.x - self.y)**2
+        )**2
 
     @cache
     def Q2(self, i, nu):
+        # (4.18)
         return self.X[nu]**2 * self.Y[nu]**2 / (self.X[i]**2 * self.Y[i]**2) * self.U2nu(i, nu)
+
+    @cached_property
+    def U2xyz(self):
+        return self.U2(1, 2), self.U2(1, 3), self.U2(2, 3)
 
     @cache
     def Ie(self, i: int):
         if abs(i) > self.n:
             raise ValueError(f'-{self.n} <= i <= {self.n}')
         if i < -self.h:
+            # (4.27)
             (i, j, k, l), nu = self.idx_set, -i
-            ret = 2 * self.b[nu] * (
-                self.d[i, j]*self.d[i, k]*self.d[i, l] / self.d[i, nu] / 3 * self.elliprj(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3), self.U2nu(i, nu))
+            ret = 2 * self.xmy * self.b[nu] * (
+                self.d[i, j]*self.d[i, k]*self.d[i, l] / self.d[i, nu] / 3
+                    * self.xmy2 * self.elliprj(*self.U2xyz, self.U2nu(i, nu))
                 + self.elliprc(self.S2(i, nu), self.Q2(i, nu))
             )
             return (ret if i == 0 else ret - self.b[i] * self.Ie(0)) / self.d[i, nu]
         elif i < 0:
+            # (4.28)
             i, (j, k, l) = -i, self.idx_set - {-i}
-            ret = 2*self.b[i] * (
-                self.d[j, k]*self.d[j, l] / 3 * self.elliprd(self.U2(i, k), self.U2(j, k), self.U2(i, j))
+            ret = 2 * self.xmy * self.b[i] * (
+                self.d[j, k]*self.d[j, l] / 3
+                    * self.xmy2 * self.elliprd(self.U2(i, k), self.U2(j, k), self.U2(i, j))
                 + self.X[j]*self.Y[j] / (self.X[i]*self.Y[i] * _sqrt(self.U2(i, j)))
             )
             return (ret if j == 0 else ret - self.b[j] * self.Ie(0)) / self.d[j, i]
         elif i==0:
-            return 2*self.elliprf(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3))
+            # (4.26)
+            return 2 * self.xmy * self.elliprf(*self.U2xyz)
         elif i <= self.h:
             if self.h == 3:
                 # https://dlmf.nist.gov/19.29.E16
@@ -195,13 +216,16 @@ class EllipticReduction:
                     + 2 * self.b[i] * (self.sx / self._s(i, self.x) - self.sy / self._s(i, self.y))
                 ) / self.b[j] / self.b[k]
             else:
+                # (4.29)
                 # TODO: S.real <= 0 ....
                 j, k, l = self.idx_set - {i}
-                return 2 * (
+                return 2 * self.xmy * (
                     self.elliprc(self.S2(i, 0), self.Q2(i, 0))
-                    - self.d[i, j] * self.d[i, k] * self.d[i, l] / self.b[i] / 3 * self.elliprj(self.U2(1, 2), self.U2(1, 3), self.U2(2, 3), self.U2nu(i, 0))
+                    - self.d[i, j] * self.d[i, k] * self.d[i, l] / self.b[i] / 3
+                        * self.xmy2 * self.elliprj(*self.U2xyz, self.U2nu(i, 0))
                 )
         elif i <= self.n:
+            # (4.30)
             j = 1
             return (self.b[i] * self.Ie(j) + self.d[i, j] * self.Ie(0)) / self.b[j]
 
