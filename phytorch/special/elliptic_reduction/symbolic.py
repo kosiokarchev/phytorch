@@ -23,17 +23,16 @@ class SymbolicEllipticReduction(EllipticReduction):
     def get(cls, n: int, h: int) -> SymbolicEllipticReduction:
         return cls(n=n, h=h)
 
-    def __init__(self, n=4, h=4, general_b=True):
-        if general_b:
+    def __init__(self, n=4, h=4, canonic=True):
+        if canonic:
             x, y = sym.symbols('x, y')
-            a, b = (tuple(take(n, sym.numbered_symbols(l, start=1))) for l in 'ab')
+            a = tuple(take(n, sym.numbered_symbols('a', start=1)))
         else:
             x, y = sym.symbols('z_2, z_1', real=True)
             a = tuple(-r for r in take(n, sym.numbered_symbols('r', start=1, real=True)))
-            b = n*(1,)
-        super().__init__(x, y, a, b, h)
+        super().__init__(x, y, a, h)
 
     @cache
     def desymbolise(self, expr: sym.Expr) -> Callable[[Iterable[_T], Iterable[_T], tuple[_T, _T]], _T]:
-        return sym.lambdify([self.a, self.b, (self.y, self.x)], expr,
+        return sym.lambdify([self.a, (self.y, self.x)], expr,
                             modules=[{'sqrt': lambda x: x**0.5}, torch])

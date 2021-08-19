@@ -16,7 +16,7 @@ from ...utils.function_context import TorchFunctionContext
 class EllipticIntegral(Function):
     @staticmethod
     def forward(ctx: TorchFunctionContext, m: Sequence[int], h, z1, z2, *a) -> Tensor:
-        er = EllipticReduction(z2, z1, a, len(a) * (1,), h=h)
+        er = EllipticReduction(z2, z1, a, h=h)
         ctx.er = er
         ctx.m = m
         return er.Im(m)

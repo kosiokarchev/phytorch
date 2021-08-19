@@ -13,9 +13,9 @@ from ...utils._typing import _TN
 
 
 class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
-    _integral_comoving_distance: ClassVar[Callable[[Iterable[_TN], Iterable[_TN], tuple[_TN, _TN]], Tensor]]
-    _integral_lookback_time: ClassVar[Callable[[Iterable[_TN], Iterable[_TN], tuple[_TN, _TN]], Tensor]]
-    _integral_absorption_distance: ClassVar[Callable[[Iterable[_TN], Iterable[_TN], tuple[_TN, _TN]], Tensor]]
+    _integral_comoving_distance: ClassVar[Callable[[Iterable[_TN], tuple[_TN, _TN]], Tensor]]
+    _integral_lookback_time: ClassVar[Callable[[Iterable[_TN], tuple[_TN, _TN]], Tensor]]
+    _integral_absorption_distance: ClassVar[Callable[[Iterable[_TN], tuple[_TN, _TN]], Tensor]]
 
     # TODO: do we really need __init_subclass__?!
     def __init_subclass__(cls, **kwargs):
@@ -33,7 +33,6 @@ class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
     def lookback_time_dimless(self, z: _TN) -> _TN:
         return self._fix_dimless(self._integral_lookback_time(
             chain(map(neg, self._epoly_roots), (1,)),
-            (self._epoly_degree+1)*(1,),
             (0, z)
         ))
 
@@ -43,14 +42,12 @@ class AnalyticFLRWDriver(BaseAnalyticFLRWDriver, ABC):
     def absorption_distance_dimless(self, z: _TN) -> _TN:
         return self._fix_dimless(self._integral_absorption_distance(
             chain(map(neg, self._epoly_roots), (1,)),
-            (self._epoly_degree+1)*(1,),
             (0, z)
         ))
 
     def comoving_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
         return self._fix_dimless(self._integral_comoving_distance(
             map(neg, self._epoly_roots),
-            self._epoly_degree*(1,),
             (z1, z2)
         ))
 
@@ -112,10 +109,10 @@ class LambdaCDM(AnalyticFLRWDriver, BaseAnalyticLambdaCDM):
             (d11*d22*d13 + d21*d12*d23)**2,
             (d11*d12*d23 + d21*d22*d13)**2)
 
-    def comoving_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
+    def _ellipr_comoving_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
         return 2 * (z2-z1) * self._fix_dimless(elliprf(*self._get_ellipr_params(z1, z2)[-1]))
 
-    def lookback_time_dimless(self, z: _TN) -> _TN:
+    def _ellipr_lookback_time_dimless(self, z: _TN) -> _TN:
         (r1, r2, r3), (d11, d12, d13, d21, d22, d23), (u1, u2, u3) = self._get_ellipr_params(0, z)
         p = (r1+1) * z**2 + u1
 
@@ -123,6 +120,9 @@ class LambdaCDM(AnalyticFLRWDriver, BaseAnalyticLambdaCDM):
             elliprc((d11*d12*d13*(z+1) + d21*d22*d23)**2, (z+1)*p)
             + z**2 / 3 * elliprj(u1, u2, u3, p)
         )
+
+    comoving_distance_dimless_z1z2 = _ellipr_comoving_distance_dimless_z1z2
+    lookback_time_dimless = _ellipr_lookback_time_dimless
 
 
 class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
@@ -150,7 +150,6 @@ class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
         )
         return 2 * self._fix_dimless(racbd**0.5 / (a+1)/(b+1) * (f(c2) - f(c1)))
 
-
     def _get_ellipr_params(self, z1, z2):
         rts = tuple(self._epoly_roots)
         d11, d12, d13, d14, d21, d22, d23, d24 = (
@@ -162,10 +161,10 @@ class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
             (d11*d22*d13*d24 + d21*d12*d23*d14)**2,
             (d11*d22*d23*d14 + d21*d12*d13*d24)**2)
 
-    def comoving_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
+    def _ellipr_comoving_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
         return 2 * (z2-z1) * self._fix_dimless(elliprf(*self._get_ellipr_params(z1, z2)[-1]))
 
-    def lookback_time_dimless(self, z: _TN) -> _TN:
+    def _ellipr_lookback_time_dimless(self, z: _TN) -> _TN:
         (r1, r2, r3, r4), (d11, d12, d13, d14, d21, d22, d23, d24), (u1, u2, u3) = self._get_ellipr_params(0, z)
         p = u1 - (r3-r1)*(r4-r1)*(r2+1)/(r1+1) * z**2
 
@@ -174,6 +173,9 @@ class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
             + z**2 / 3 * (r2-r1) * (r3-r1) * (r4-r1) / (r1+1) * elliprj(u1, u2, u3, p)
             - elliprc((d12 * d13 * d14 / d11 * (z + 1) + d22 * d23 * d24 / d21)**2, (z + 1) / d11**2 / d21**2 * p)
         ) / (r1+1))
+
+    comoving_distance_dimless_z1z2 = _ellipr_comoving_distance_dimless_z1z2
+    lookback_time_dimless = _ellipr_lookback_time_dimless
 
 
 class FlatLambdaCDM(special.FlatLambdaCDM, LambdaCDM):

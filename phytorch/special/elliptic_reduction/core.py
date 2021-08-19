@@ -35,7 +35,6 @@ class OneIndexedSequence(Sequence[_T]):
 @dataclass(frozen=True)
 class OneIndexedFormula(Generic[_T]):
     a: OneIndexedSequence[_T]
-    b: OneIndexedSequence[_T]
 
     def formula(self, *args):
         raise NotImplementedError
@@ -48,15 +47,15 @@ class OneIndexedFormula(Generic[_T]):
 class d(OneIndexedFormula):
     def formula(self, i, j):
         return (
-            -self.formula(j, i) if j<i else
-            self.a[i] * self.b[j] - self.a[j] * self.b[i]
+            -self.formula(j, i) if j < i else
+            self.a[i] - self.a[j] * int(i != 0)
         )
 
 
 @dataclass(frozen=True)
 class XorY(OneIndexedFormula):
     def formula(self, i):
-        return 1 if i == 0 else _sqrt(self.a[i] + self.b[i]*self.xory)
+        return 1 if i == 0 else _sqrt(self.a[i] + self.xory)
 
     xory: _T
 
@@ -66,7 +65,6 @@ class EllipticReduction:
     x: _T
     y: _T
     a: Union[OneIndexedSequence[_T], Sequence[_T]]
-    b: Union[OneIndexedSequence[_T], Sequence[_T]]
     h: int = 4
 
     elliprc: ClassVar[Callable[[_T, _T], _T]] = staticmethod(_ellipr.elliprc)
@@ -85,11 +83,9 @@ class EllipticReduction:
     def __post_init__(self):
         if not isinstance(self.a, OneIndexedSequence):
             self.a = OneIndexedSequence(self.a, default=1)
-        if not isinstance(self.b, OneIndexedSequence):
-            self.b = OneIndexedSequence(self.b, default=0)
 
     def _s(self, i, z):
-        return self.a[i] + self.b[i] * z
+        return self.a[i] + z
 
     def s(self, z):
         return product(_sqrt(self._s(i, z)) for i in onerange(self.h))
@@ -105,8 +101,8 @@ class EllipticReduction:
     def v(self, m: Iterable[int], z):
         # (3.2)
         return product(
-            (_a + _b*z)**(_m - (i < self.h)/2)
-            for i, (_a, _b, _m) in enumerate(zip(self.a, self.b, m))
+            (_a + z)**(_m - (i < self.h)/2)
+            for i, (_a, _m) in enumerate(zip(self.a, m))
         )
 
     @cache
@@ -121,15 +117,15 @@ class EllipticReduction:
 
     @cached_property
     def d(self):
-        return d(self.a, self.b)
+        return d(self.a)
 
     @cached_property
     def X(self):
-        return XorY(self.a, self.b, self.x)
+        return XorY(self.a, self.x)
 
     @cached_property
     def Y(self):
-        return XorY(self.a, self.b, self.y)
+        return XorY(self.a, self.y)
 
     @cached_property
     def xmy(self):
@@ -189,21 +185,21 @@ class EllipticReduction:
         if i < -self.h:
             # (4.27)
             (i, j, k, l), nu = self.idx_set, -i
-            ret = 2 * self.xmy * self.b[nu] * (
+            ret = 2 * self.xmy * (
                 self.d[i, j]*self.d[i, k]*self.d[i, l] / self.d[i, nu] / 3
                     * self.xmy2 * self.elliprj(*self.U2xyz, self.U2nu(i, nu))
                 + self.elliprc(self.S2(i, nu), self.Q2(i, nu))
             )
-            return (ret if i == 0 else ret - self.b[i] * self.Ie(0)) / self.d[i, nu]
+            return (ret if i == 0 else ret - self.Ie(0)) / self.d[i, nu]
         elif i < 0:
             # (4.28)
             i, (j, k, l) = -i, self.idx_set - {-i}
-            ret = 2 * self.xmy * self.b[i] * (
+            ret = 2 * self.xmy * (
                 self.d[j, k]*self.d[j, l] / 3
                     * self.xmy2 * self.elliprd(self.U2(i, k), self.U2(j, k), self.U2(i, j))
                 + self.X[j]*self.Y[j] / (self.X[i]*self.Y[i] * _sqrt(self.U2(i, j)))
             )
-            return (ret if j == 0 else ret - self.b[j] * self.Ie(0)) / self.d[j, i]
+            return (ret if j == 0 else ret - self.Ie(0)) / self.d[j, i]
         elif i==0:
             # (4.26)
             return 2 * self.xmy * self.elliprf(*self.U2xyz)
@@ -213,21 +209,21 @@ class EllipticReduction:
                 j, k = {1, 2, 3} - {i}
                 return (
                     self.d[i, j] * self.d[i, k] * self.Ie(-i)
-                    + 2 * self.b[i] * (self.sx / self._s(i, self.x) - self.sy / self._s(i, self.y))
-                ) / self.b[j] / self.b[k]
+                    + 2 * (self.sx / self._s(i, self.x) - self.sy / self._s(i, self.y))
+                )
             else:
                 # (4.29)
                 # TODO: S.real <= 0 ....
                 j, k, l = self.idx_set - {i}
                 return 2 * self.xmy * (
                     self.elliprc(self.S2(i, 0), self.Q2(i, 0))
-                    - self.d[i, j] * self.d[i, k] * self.d[i, l] / self.b[i] / 3
+                    - self.d[i, j] * self.d[i, k] * self.d[i, l] / 3
                         * self.xmy2 * self.elliprj(*self.U2xyz, self.U2nu(i, 0))
                 )
         elif i <= self.n:
             # (4.30)
             j = 1
-            return (self.b[i] * self.Ie(j) + self.d[i, j] * self.Ie(0)) / self.b[j]
+            return self.Ie(j) + self.d[i, j] * self.Ie(0)
 
     @cache
     def A(self, m: Iterable[int]):
@@ -238,8 +234,8 @@ class EllipticReduction:
     def sigma(self, p, j=0):
         # (3.3), (3.4)
         return (
-            product(self.b[i] for i in onerange(self.h)) if p==0 else
-            self.sigma(0) * elementary_symmetric(p, [self.d[i, j] / self.b[i] for i in onerange(self.h)])
+            1 if p==0 else
+            elementary_symmetric(p, [self.d[i, j] for i in onerange(self.h)])
         )
 
     @cache
@@ -266,14 +262,9 @@ class EllipticReduction:
 
         q = q - ri
         return (
-            self.b[j]**(self.h-1) * self.A(tuple((i<=self.h) + (q+1) * (i == j) for i in onerange(self.n)))
+            self.A(tuple((i<=self.h) + (q+1) * (i == j) for i in onerange(self.n)))
             - sum(self._Iqe_pref(q, r, j) * self.Iqe(q+r, j) for r in range(low, high))
         ) / self._Iqe_pref(q, ri, j)
-
-    @cache
-    def B(self, m: Iterable[int]):
-        # (2.5)
-        return product(bj ** mj for bj, mj in zip(self.b, m))
 
     @cache
     def D(self, m: OneIndexedSequence[int], i: int):
@@ -284,7 +275,7 @@ class EllipticReduction:
     def mu(self, m: OneIndexedSequence[int], s: int, i: int):
         # (2.6)
         return -1 / abs(s) * sum(
-            m[j] * (self.d[i, j] / self.b[j])**s
+            m[j] * self.d[i, j]**s
             for j in onerange(self.n) if j != i
         )
 
@@ -305,11 +296,11 @@ class EllipticReduction:
 
         # (2.19)
         return (
-            self.B(m) * self.b[i0]**(-M) * sum(
+            sum(
                 self.C(m, M-q, i0) * self.Iqe(q, i0)
                 for q in range(0, M+1))
             + sum(
-                self.D(m, i) * self.b[i]**(m[i]-M) * sum(
+                self.D(m, i) * sum(
                     self.C(m, m[i]+q, i) * self.Iqe(-q, i)
                     for q in onerange(-m[i]))
                 for i in onerange(self.n)
