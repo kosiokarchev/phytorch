@@ -13,10 +13,13 @@ from torch import isinf
 
 from phytorch.special.ellipr import elliprc, elliprd, elliprf, elliprg, elliprj
 from phytorch.utils.symmetry import product
-from tests.common import (
-    _complex_number, _complex_number_, _complex_numbers, _cut_plane_, _nonnegative_number,
-    _nonzero_cut_plane, _positive_number, _positive_numbers,
-    AllDtypeTest, BaseCasesTest, close, DoubleDtypeTest, nice_and_close)
+from tests.common.cases import BaseCasesTest
+from tests.common.closeness import close, distinct, nice_and_close
+from tests.common.dtypes import AllDtypeTest, DoubleDtypeTest
+from tests.common.strategies import (_complex_number, _complex_number_, _complex_numbers, _cut_plane_,
+                                     _nonnegative_number,
+                                     _nonzero_complex_number, _nonzero_cut_plane, _positive_number,
+                                     _positive_numbers)
 
 
 ELLIPR_FUNCMAP = (
@@ -159,7 +162,7 @@ class TestElliprSpecialCases(DoubleDtypeTest):
     @given(*3*(_cut_plane_(st.floats(1e-2, 1e10)),), st.floats(1e-3, 1e3))
     def test_elliprg(x, y, z, l):
         assert nice_and_close(elliprg(x, x, x), x**0.5)
-        assert nice_and_close(elliprg(l * x, l * y, l * z), elliprg(x, y, z) * l**0.5)
+        assert nice_and_close(elliprg(l * x, l * y, l * z), elliprg(x, y, z) * l**0.5)  # TODO:  elliprc sign issue
         assert nice_and_close(elliprg(0, y, y), pi / 4 * y**0.5)
         assert nice_and_close(elliprg(0, 0, z), z**0.5 / 2)
         assert nice_and_close(2 * elliprg(x, y, y), y * elliprc(x, y) + x**0.5)
@@ -178,23 +181,21 @@ class TestElliprSpecialCases(DoubleDtypeTest):
         # assert nice_and_close(elliprj(0, y, z, -(y*z)**0.5), -1.5/(y*z)**0.5 * elliprf(0, y, z))
 
         # TODO:  elliprc sign issue
-        assume(all(abs(a-b)>1e-3 for a, b in combinations((x, y, z), 2)))
-        # assume(abs(x-y)>1e-3 and abs(x-z)>1e-3)
+        assume(distinct(x, y, z))
         p = x + ((y-x)*(z-x))**0.5
         assert nice_and_close((p-x)*elliprj(x, y, z, p), 1.5 * (elliprf(x, y, z) - x**0.5*elliprc(y*z, p**2)))
 
     @staticmethod
     @given(*2*(_nonzero_cut_plane,), _positive_number)
     def test_elliprj1(x, y, p):
-        assume(abs(p - y) > 1e-3)
-
+        assume(distinct(y, p))
         assert nice_and_close(elliprj(0, y, y, p), 1.5*pi / (y*p**0.5 + p*y**0.5))
         assert nice_and_close(elliprj(x, y, y, p), 3 * (elliprc(x, y) - elliprc(x, p)) / (p-y))
 
     @staticmethod
     @given(_positive_number, _positive_number)
     def test_elliprj2(y, p):
-        assume(y != 0 and y != p)
+        assume(distinct(y, p) and y != 0)
         assert nice_and_close(elliprj(0, y, y, -p).real, -1.5*pi / y**0.5 / (y+p))
 
 
@@ -261,10 +262,8 @@ class TestElliprConnections(DoubleDtypeTest):
         assert nice_and_close(elliprj(x, y, z, p), 2*elliprj(xa, ya, za, pa) + 3*elliprc((p*ss + xs*ys*zs)**2, p*pa**2))
 
     @staticmethod
-    @given(_complex_number)
+    @given(_nonzero_cut_plane)
     def test_legendre_relation(z):
-        assume(not (z.real <= 0 and z.imag == 0))
-
         # https://dlmf.nist.gov/19.21.E1
         assert nice_and_close(
             elliprf(0, z+1, z) * elliprd(0, z+1, 1) + elliprd(0, z+1, z)*elliprf(0, z+1, 1),
@@ -272,11 +271,8 @@ class TestElliprConnections(DoubleDtypeTest):
         )
 
     @staticmethod
-    @given(*2*_complex_numbers)
+    @given(*2*(_nonzero_cut_plane,))
     def test_complete_1(y, z):
-        # TODO: global C \ (-inf, 0]
-        assume(not any((_.real <= 0 and _.imag == 0) for _ in (y, z)))
-
         # https://dlmf.nist.gov/19.21.E2
         assert nice_and_close(3 * elliprf(0, y, z), z*elliprd(0, y, z) + y*elliprd(0, z, y))
 
@@ -304,7 +300,7 @@ class TestElliprConnections(DoubleDtypeTest):
     @given(*3*_positive_numbers)
     def test_complete_3(y, z, p):
         # https://dlmf.nist.gov/19.21.E6
-        assume(len({y, z, p}) == 3)
+        assume(distinct(y, z, p))
         if z < y < p or p < y < z:
             y, z = z, y
 
@@ -317,10 +313,10 @@ class TestElliprConnections(DoubleDtypeTest):
         )
 
     @staticmethod
-    @given(*3*_complex_numbers)
+    @given(*3*(_nonzero_complex_number,))
     def test_incomplete(x, y, z):
         # TODO: sign of sqrt(x, y, z)
-        assume(x != 0 and y != 0 and z != 0 and len({x, y, z}) == 3)
+        assume(distinct(x, y, z))
 
         # https://dlmf.nist.gov/19.21.E7
         assert nice_and_close(
@@ -353,10 +349,10 @@ class TestElliprConnections(DoubleDtypeTest):
         )
 
     @staticmethod
-    @given(*3*_positive_numbers, _complex_number)
+    @given(*3*_positive_numbers, _nonzero_complex_number)
     def test_elliprj(x, y, z, p):
         # TODO: properly analytically continue
-        assume(all(abs(a-b)>1e-3 for a, b in combinations((x, y, z, p), 2)))
+        assume(distinct(x, y, z, p))
 
         # https://dlmf.nist.gov/19.21.E13
         q = (y-x)*(z-x) / (p-x) + x

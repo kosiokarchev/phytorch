@@ -3,7 +3,6 @@ from math import inf, nan
 from typing import Union
 
 import hypothesis.extra.numpy as npst
-import numpy as np
 import torch
 from hypothesis import given, strategies as st
 from hypothesis.strategies import SearchStrategy
@@ -11,7 +10,7 @@ from pytest import fixture, mark
 from torch import allclose, as_tensor, isclose, tensor
 
 from phytorch.roots import companion_matrix, roots, sroots, vieta
-from tests.common import make_dtype_tests, with_default_double
+from tests.common.dtypes import make_dtype_tests, with_default_double
 
 
 def compare_sets(a, b, **kwargs):
@@ -20,7 +19,7 @@ def compare_sets(a, b, **kwargs):
 
 def coeffs_strategy(
         n: Union[int, SearchStrategy[int]] = st.integers(min_value=2, max_value=4),
-        dtype=np.complex,
+        dtype=complex,
         elements=st.complex_numbers(min_magnitude=1e-6, max_magnitude=1e6, allow_nan=False, allow_infinity=False)):
     if isinstance(n, int):
         return coeffs_strategy(st.integers(min_value=2, max_value=n))

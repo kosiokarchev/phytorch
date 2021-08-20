@@ -17,7 +17,8 @@ from phytorch.cosmology.special import AbstractFlatLambdaCDMR, AbstractLambdaCDM
 from phytorch.units.astro import Gpc, Gyr, Mpc
 from phytorch.units.si import cm, gram, kelvin, km, s
 from phytorch.units.Unit import Unit
-from tests.common import close, with_default_double
+from tests.common.closeness import close
+from tests.common.dtypes import with_default_double
 
 
 ZERO = torch.zeros(())

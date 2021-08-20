@@ -12,6 +12,8 @@ from .core import EllipticReduction
 from ...utils.function_context import TorchFunctionContext
 
 
+# TODO: update functional EllipticIntegral
+
 # noinspection PyMethodOverriding,PyAbstractClass
 class EllipticIntegral(Function):
     @staticmethod

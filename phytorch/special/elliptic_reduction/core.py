@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from functools import cache, cached_property
-from math import factorial
+from math import comb, factorial
+from operator import itemgetter
 from typing import Callable, ClassVar, Generic, Iterable, Sequence, Union
 
 from more_itertools import always_iterable
@@ -164,6 +165,7 @@ class EllipticReduction:
     def S2(self, i, nu):
         # (4.16)
         j, k, l = self.idx_set - {i}
+        # TODO: S.real <= 0 ....
         return (
             self.X[j]*self.X[k]*self.X[l] / self.X[i] * self.Y[nu]**2
             + self.Y[j]*self.Y[k]*self.Y[l] / self.Y[i] * self.X[nu]**2
@@ -213,7 +215,6 @@ class EllipticReduction:
                 )
             else:
                 # (4.29)
-                # TODO: S.real <= 0 ....
                 j, k, l = self.idx_set - {i}
                 return 2 * self.xmy * (
                     self.elliprc(self.S2(i, 0), self.Q2(i, 0))
@@ -244,6 +245,12 @@ class EllipticReduction:
 
     @cache
     def Iqe(self, q: int, j: int):
+        if j > self.h == 4 and q == 2:
+            # (3.11)
+            i = 1
+            return sum(comb(q, r) * self.d[j, i]**(q-r) * self.Iqe(r, i)
+                       for r in range(0, q+1))
+
         # (3.5) and see paragraph after proof
         if q > 1:
             ri = self.h
@@ -290,6 +297,19 @@ class EllipticReduction:
 
     @cache
     def Im(self, m: Sequence[int]):
+        # try:
+        #     # if there is only one non-zero m_j, call Iqe(m_j, j)
+        #     # if m = 0, call Iqe(0, 0) -> Ie(0)
+        #     # else raise a ValueError, meaning m is nontrivial
+        #     return self.Iqe(*only(filter(itemgetter(1), enumerate(m, 1)), (0, 0))[::-1])
+        # except ValueError:
+        #     pass
+        _m = tuple(filter(itemgetter(1), enumerate(m, 1)))
+        if not any(m):
+            return self.Ie(0)
+        if len(_m) == 1:
+            return self.Iqe(*_m[0][::-1])
+
         i0 = 1
         M = sum(m)
         m = OneIndexedSequence(m)

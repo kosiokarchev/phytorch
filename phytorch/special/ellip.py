@@ -11,6 +11,7 @@ from ..utils.complex import with_complex_args
 from ..utils.function_context import CargsMixin, CimplMixin
 
 
+# noinspection PyUnusedLocal
 class CosecantSquared(CimplMixin, CargsMixin):
     _impl_func = _elliptic.csc2
 

@@ -10,7 +10,8 @@ from torch.autograd import gradcheck, gradgradcheck
 
 from phytorch.special.elliptic import *
 from phytorch.utils.complex import get_default_complex_dtype
-from tests.common import _cut_plane_, _positive_real_complex_, with_default_double
+from tests.common.dtypes import with_default_double
+from tests.common.strategies import _cut_plane_, _positive_complex_
 from tests.special.test_ellipr import ELLIPR_FUNCMAP
 
 
@@ -53,7 +54,7 @@ def test_ellipr_grads(func, nargs, _, x, y, z):
 
 
 @with_default_double
-@given(*4*(_positive_real_complex_(st.floats(1e-2, 1e2)),))
+@given(*4*(_positive_complex_(st.floats(1e-2, 1e2)),))
 def test_elliprj_grad(x, y, z, p):
     args = x, y, z, p
 

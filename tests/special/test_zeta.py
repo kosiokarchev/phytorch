@@ -4,7 +4,8 @@ from hypothesis import assume, given, strategies as st
 from pytest import mark
 
 from phytorch.special.zeta import zeta
-from tests.common import close, make_dtype_tests, nice_and_close
+from tests.common.closeness import close, nice_and_close
+from tests.common.dtypes import make_dtype_tests
 
 
 class RiemannZetaTest:
@@ -141,8 +142,8 @@ class RiemannZetaTest:
     ))
     def test_nontrivial_zeros(self, y):
         # we're not super good at zeros, so we only really get the first few...
-        assert close(zeta(0.5+1j*y), 0, atol=1e-5)
-        assert close(zeta(0.5-1j*y), 0, atol=1e-5)
+        assert close(zeta(0.5 + 1j * y), 0, atol=1e-5)
+        assert close(zeta(0.5 - 1j * y), 0, atol=1e-5)
 
 
 globals().update(make_dtype_tests((RiemannZetaTest,), 'RiemannZeta'))

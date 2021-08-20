@@ -10,7 +10,9 @@ from scipy.special._mptestutils import exception_to_nan
 from torch import allclose, isclose, isnan, tensor
 
 from phytorch.special.gamma import digamma, gamma, loggamma, polygamma
-from tests.common import (AllDtypeTest, BaseCasesTest, close_complex_nan, DoubleDtypeTest, with_default_double)
+from tests.common.cases import BaseCasesTest
+from tests.common.closeness import close_complex_nan
+from tests.common.dtypes import AllDtypeTest, DoubleDtypeTest, with_default_double
 
 
 euler = float(mp.euler)

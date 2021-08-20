@@ -2,7 +2,7 @@ from torch import Tensor
 
 from ..extensions import special as _special
 from ..utils._typing import _TN
-from ..utils.complex import as_complex_tensors, with_complex_args
+from ..utils.complex import as_complex_tensors
 from ..utils.function_context import CargsMixin
 
 
@@ -82,9 +82,9 @@ class Polygamma(CargsMixin):
     gradfuncs = (None, grad_z)
 
 
-gamma = with_complex_args(Gamma.apply)
-loggamma = with_complex_args(Loggamma.apply)
-digamma = psi = with_complex_args(Digamma.apply)
+gamma = Gamma.apply
+loggamma = Loggamma.apply
+digamma = psi = Digamma.apply
 
 
 def polygamma(n: int, z: _TN) -> Tensor:
@@ -92,4 +92,3 @@ def polygamma(n: int, z: _TN) -> Tensor:
 
 
 __all__ = 'gamma', 'loggamma', 'digamma', 'polygamma'
-
