@@ -9,7 +9,11 @@ from .meta import Meta
 from .quantities.torchquantity import TorchQuantity
 
 
-class RaggedTensor(Meta, Tensor):
+class RaggedTensorMeta(type(Meta), type(Tensor)):
+    pass
+
+
+class RaggedTensor(Meta, Tensor, metaclass=RaggedTensorMeta):
     sizes: Meta.meta_attribute(Sequence[int])
 
     def __new__(cls, *args, sizes: Sequence[int], **kwargs):
@@ -38,7 +42,11 @@ class RaggedTensor(Meta, Tensor):
         return self.new_zeros(self.reduced_shape).scatter_add_(-1, self.reduce_indices, self)
 
 
-class RaggedQuantity(TorchQuantity, RaggedTensor):
+class RaggedQuantityMeta(type(TorchQuantity), type(RaggedTensor)):
+    pass
+
+
+class RaggedQuantity(TorchQuantity, RaggedTensor, metaclass=RaggedQuantityMeta):
     def __new__(cls, arg, *args, sizes, unit=None, **kwargs):
         if isinstance(arg, TorchQuantity) and unit is None:
             unit = arg.unit

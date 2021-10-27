@@ -62,7 +62,7 @@ class Roots(torch.autograd.Function):
             c for r in combinations(rts[::-1], len(rts) - 1)
             for c in vieta(r)
         ], -1).unflatten(-1, (len(rts), len(rts))).inverse().movedim((-2, -1), (0, 1))
-        return (grads.conj() * torch.stack(grad_outputs)).sum(1).unbind(0)
+        return (None,) + tuple((grads.conj() * torch.stack(grad_outputs)).sum(1).unbind(0))
 
 
 def roots(*coeffs: _TN, force_numeric=False):
