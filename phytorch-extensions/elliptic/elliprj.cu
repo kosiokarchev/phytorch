@@ -16,7 +16,17 @@ DEFINE_COMPLEX_FUNCTION(elliprj, (x, y, z, p)) {
             or (is_real_nonnegative(z) and are_conjugate(x, y) and x)
         ))
         or (x == p or y == p or z == p)  // last paragraph of algorithm
-    )) return cnan<T>();
+    )) {
+// #define CHICKEN
+//         printf("Carlson's elliprj algorithm not guaranteed."
+// #ifdef CHICKEN
+//                " Chickening out!"
+// #endif
+//                "\n");
+// #ifdef CHICKEN
+        return cnan<T>();
+// #endif
+    }
 
     // The following is the implementation of the above in mpmath:
     // if (not (x.real() >= 0 and y.real() >= 0 and z.real() >= 0 and p.real() > 0)

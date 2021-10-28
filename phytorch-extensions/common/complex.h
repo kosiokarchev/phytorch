@@ -4,7 +4,7 @@
 
 #define ltrl(a) ((scalar_t) (a))
 
-#include "c10/util/complex.h" // NOLINT(modernize-deprecated-headers)
+#include <c10/util/complex.h> // NOLINT(modernize-deprecated-headers)
 template <typename scalar_t> using complex = c10::complex<scalar_t>;
 
 using std::numeric_limits;

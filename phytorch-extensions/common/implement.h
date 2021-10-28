@@ -1,6 +1,6 @@
 #pragma once
 
-#include "torch/extension.h"
+#include <torch/extension.h>
 #include <ATen/TensorIterator.h>
 
 #include "preprocessor.h"

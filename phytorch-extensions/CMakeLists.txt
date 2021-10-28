@@ -5,19 +5,12 @@ set(CMAKE_CUDA_COMPILER /opt/cuda/bin/nvcc)
 
 project(phytorch LANGUAGES C CXX CUDA)
 
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr --extended-lambda")
 
 find_package(Python3 COMPONENTS Development.Module)
 include_directories(${Python3_INCLUDE_DIRS})
 
 set(Torch_DIR ~/.local/lib/python3.9/site-packages/torch/share/cmake/Torch)
-
-set(CUDA_ROOT /opt/cuda)
-find_package(CUDA)
-
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr --extended-lambda")
-
-set(CUDNN_LIBRARY_PATH /opt/cudnn/lib/libcudnn.so)
-set(CUDNN_INCLUDE_PATH /opt/cudnn/include)
 find_package(Torch)
 
 message("${TORCH_INCLUDE_DIRS}")

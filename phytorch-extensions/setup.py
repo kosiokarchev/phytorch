@@ -5,10 +5,6 @@ from pathlib import Path
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, _is_cuda_file
 
-# That's for torch, need to be set in the terminal as well...
-os.environ['CXX'] = 'g++-8'
-os.environ['CUDA_HOME'] = '/usr/local/cuda'
-
 
 class MyBuildExtension(BuildExtension):
     def build_extension(self, ext: CUDAExtension):
@@ -21,11 +17,13 @@ class MyBuildExtension(BuildExtension):
             if cuda_objects:
                 cuda_linked_object = os.path.join(os.path.dirname(
                     cuda_objects[0]), ext.name+'_device_linked.o')
-                cuda_link = ['nvcc', '--device-link', '--forward-unknown-to-host-compiler', '-fPIC'] + cuda_objects + ['-o', cuda_linked_object]
+                cuda_link = [
+                    'nvcc', '--device-link', '--forward-unknown-to-host-compiler', '-fPIC'
+                ] + [f'-I{incl}' for incl in ext.include_dirs] + cuda_objects + ['-o', cuda_linked_object]
 
                 print('Linking device code')
                 print(' '.join(cuda_link))
-                subprocess.run(cuda_link, stdout=1, stderr=subprocess.PIPE, cwd=output_dir, check=True)
+                subprocess.run(cuda_link, cwd=output_dir, check=True)
 
                 objects.append(cuda_linked_object)
 
@@ -42,7 +40,9 @@ setup(
     ext_modules=[
         CUDAExtension(folder, [
             str(_) for _ in filter(lambda _: (_.suffix.lower() in ('.cpp', '.cu') and not _.name.startswith('_')), Path(folder).iterdir())
-        ], extra_compile_args={'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda', '--relocatable-device-code=true', '--gpu-architecture=sm_30']})
+        ], extra_compile_args={
+            'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda', '--relocatable-device-code=true']
+        }, include_dirs=os.environ.get('INCLUDE', '').rstrip(':').split(':'))
         for folder in (
             'elliptic', 'roots', 'special',
         )
