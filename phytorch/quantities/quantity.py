@@ -9,7 +9,7 @@ from .delegation.delegating import Delegating
 from .delegation.quantity_delegators import PowerDelegator, ProductDelegator, QuantityDelegator
 from ..meta import Meta
 from ..units.angular import rad
-from ..units.Unit import Unit
+from ..units.unit import Unit
 from ..utils._typing import ValueProtocol
 
 
@@ -27,11 +27,11 @@ _t = TypeVar('_t', Type[QuantityBackendProtocol], type)
 
 
 class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
-    _generic_quantiy_subtypes: MutableMapping[Type, Type] = {}
+    _generic_quantity_subtypes: MutableMapping[Type, Type[GenericQuantity]] = {}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls._generic_quantiy_subtypes[cls._T] = cls
+        cls._generic_quantity_subtypes[cls._T] = cls
 
     @classmethod
     def _from_bare_and_unit(cls, bare: _t, unit: Unit) -> GenericQuantity[_t]:

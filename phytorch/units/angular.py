@@ -1,8 +1,8 @@
 from math import pi
 
-from ._utils import AutoCleanupGlobalScope
+from ..utils.scoping import AutoCleanupGlobalScope
 from .prefixes import micro_, milli_
-from .Unit import Unit
+from .unit import Unit
 
 
 with AutoCleanupGlobalScope():

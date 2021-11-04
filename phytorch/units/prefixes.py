@@ -4,7 +4,7 @@ from itertools import chain
 from more_itertools import consume, first, unique_everseen
 
 from ._prefixes import _generic_prefix, _prefix_map
-from ._utils import AllScope
+from ..utils.scoping import AllScope
 
 
 _all_scope = AllScope()

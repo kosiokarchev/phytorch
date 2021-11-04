@@ -1,7 +1,7 @@
 from more_itertools import one
 
 from .._utils import names_and_abbrevs
-from ..Unit import CURRENT, Dimension, LENGTH, MASS, TEMPERATURE, TIME, Unit
+from ..unit import CURRENT, Dimension, LENGTH, MASS, TEMPERATURE, TIME, Unit
 
 
 base_unit_map = {

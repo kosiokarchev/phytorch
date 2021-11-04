@@ -10,7 +10,7 @@ from ..quantities.quantity import GenericQuantity
 from ..units.angular import steradian
 from ..units.astro import Mpc, pc
 from ..units.si import km, s
-from ..units.Unit import Unit
+from ..units.unit import Unit
 from ..utils._typing import _TN, ValueProtocol
 
 

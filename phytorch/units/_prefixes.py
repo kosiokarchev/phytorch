@@ -6,7 +6,7 @@ from typing import Container, Mapping
 from more_itertools import first
 
 from ._utils import _outformat, names_and_abbrevs
-from .Unit import Unit
+from .unit import Unit
 
 
 _prefix_map = {

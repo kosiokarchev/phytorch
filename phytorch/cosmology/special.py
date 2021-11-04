@@ -8,7 +8,7 @@ from typing import ClassVar, TYPE_CHECKING
 from .core import _GQuantity, FLRW
 from ..constants import c as speed_of_light, sigma as sigma_sb
 from ..math import asinh
-from ..units.Unit import Unit
+from ..units.unit import Unit
 from ..utils._typing import _TN
 
 

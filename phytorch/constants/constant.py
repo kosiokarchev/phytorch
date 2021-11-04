@@ -1,10 +1,11 @@
 from numbers import Real
 from typing import Union
 
-from ..units.Unit import Unit
+from ..units.unit import Unit
 
 
 class Constant(Unit):
+    # necessary because Constant.__init__ has a different signature
     @classmethod
     def _make(cls, iterable, **kwargs):
         return Unit._make(iterable, **kwargs)

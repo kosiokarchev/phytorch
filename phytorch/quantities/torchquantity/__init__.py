@@ -11,7 +11,7 @@ from torch import Tensor
 from .functypes import DictByName, TORCH_FUNCTYPES_H
 from ..delegation.quantity_delegators import QuantityDelegator, QuantityDelegatorBase
 from ..quantity import GenericQuantity, UnitFuncType
-from ...units.Unit import Unit
+from ...units.unit import Unit
 
 
 class TorchQuantityMeta(type(GenericQuantity), type(Tensor)):
@@ -64,6 +64,7 @@ class TorchQuantity(GenericQuantity[Tensor], Tensor, metaclass=TorchQuantityMeta
         with self.delegator_context:
             return map(self._meta_update, super().__iter__())
 
+    # TODO: transform __torch_function__ into classmethod
     def __torch_function__(self, func, types, args=(), kwargs=frozendict()):
         if ((_func := getattr(type(self), func.__name__, None)) is not None
                 and _func is not func):

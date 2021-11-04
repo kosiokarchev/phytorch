@@ -10,7 +10,7 @@ from more_itertools import collapse
 
 from .delegator import Delegator
 from .. import quantity
-from ...units.Unit import Unit
+from ...units.unit import Unit
 
 
 @dataclass(eq=False)

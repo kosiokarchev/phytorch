@@ -1,4 +1,4 @@
-from .Constant import Constant
+from .constant import Constant
 
 L_sun: Constant
 L_☉: Constant

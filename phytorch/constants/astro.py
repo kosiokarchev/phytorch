@@ -2,7 +2,7 @@ from more_itertools import last
 
 from ..units._si.base import kg, m
 from ..units._si.coherent import W
-from ..units._utils import GlobalScope
+from ..utils.scoping import GlobalScope
 
 
 GlobalScope().register_many(**{name: val for names, (val, description) in {

@@ -16,7 +16,7 @@ from phytorch.constants import codata2014, G as Newton_G
 from phytorch.cosmology.special import AbstractFlatLambdaCDMR, AbstractLambdaCDMR
 from phytorch.units.astro import Gpc, Gyr, Mpc
 from phytorch.units.si import cm, gram, kelvin, km, s
-from phytorch.units.Unit import Unit
+from phytorch.units.unit import Unit
 from tests.common.closeness import close
 from tests.common.dtypes import with_default_double
 
