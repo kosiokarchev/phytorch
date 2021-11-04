@@ -21,7 +21,7 @@ class Meta(ABC):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls._meta_attributes = {
-            key for key, val in get_type_hints(cls, include_extras=True).items()
+            key for key, val in get_type_hints(cls, include_extras=True, localns={cls.__name__: cls}).items()
             if get_origin(val) is Annotated and get_args(val)[1] is cls._meta_annotation}
 
     def __new__(cls, *args, **kwargs):
