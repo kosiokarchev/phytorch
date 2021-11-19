@@ -1,5 +1,5 @@
-import typing
 from itertools import chain
+from typing import Any, Dict, Protocol, TYPE_CHECKING
 
 import torch
 from more_itertools import first
@@ -10,9 +10,10 @@ from ..quantity import UnitFuncType  # Must come before delegator import!
 from ..delegation.quantity_delegators import ProductDelegator, QuantityDelegator
 
 
-if 'a' > 'b':
+if TYPE_CHECKING:
     from torch._C._VariableFunctions import *
-globals().update({key: getattr(torch._C._VariableFunctions, key) for key in torch._C._VariableFunctions.__dir__()})
+
+globals().update({key: getattr(torch._C._VariableFunctions, key) for key in dir(torch._C._VariableFunctions)})
 
 
 __all__ = 'TORCH_FUNCTYPES_H',
@@ -23,14 +24,14 @@ def _torch_and_tensor(*torch_funcs):
     return set(chain(torch_funcs, (getattr(Tensor, func.__name__) for func in torch_funcs)))
 
 
-class NamedProtocol(typing.Protocol):
+class NamedProtocol(Protocol):
     __name__: str
 
 
-class DictByName(dict):
+class DictByName(Dict[NamedProtocol, Any]):
     notfound = object()
 
-    def _get_alias(self, item):
+    def _get_alias(self, item: NamedProtocol):
         return first((key for key in self.keys()
                       if key.__name__ == item.__name__),
                      self.notfound)
@@ -38,7 +39,7 @@ class DictByName(dict):
     def __missing__(self, key):
         if (alias := self._get_alias(key)) is self.notfound:
             raise KeyError(key)
-        return self[alias]
+        return self.setdefault(key, self[alias])
 
     def __contains__(self, item):
         return super().__contains__(item) or self._get_alias(item) is not self.notfound
@@ -51,10 +52,7 @@ class DictByName(dict):
 TORCH_FUNCTYPES_H = {
     # UnitFuncType.REJECT: _torch_and_tensor(prod, cumprod),
     UnitFuncType.NOUNIT: {
-        Tensor.__repr__, Tensor.__dir__, Tensor.storage, Tensor.tolist,
-        Tensor.new, Tensor.new_tensor, Tensor.new_full, Tensor.new_ones,
-        Tensor.new_zeros, Tensor.new_empty,
-        Tensor.__reduce__, Tensor.__reduce_ex__
+        Tensor.__repr__, Tensor.__dir__, Tensor.__reduce__, Tensor.__reduce_ex__
     },
     UnitFuncType.SAME: {
         Tensor.requires_grad_, Tensor.to, Tensor.expand
@@ -62,8 +60,8 @@ TORCH_FUNCTYPES_H = {
         # nan_to_num
         abs, absolute, ceil, clamp, clip, clone, conj, fix, trunc, floor, frac,
         real, imag, neg, negative, nextafter, round,
-        gather, index_select, masked_select, narrow, take,
-        movedim, reshape, squeeze, unsqueeze, t, transpose, flatten,
+        index_select, masked_select, take,
+        reshape, squeeze, unsqueeze, t, transpose, flatten,
         diag, diag_embed, diagflat, diagonal, flip, fliplr, flipud, rot90, roll,
         chunk, split, unbind, repeat_interleave,
         mean, median, mode, norm, nansum, quantile, nanquantile, std, sum,

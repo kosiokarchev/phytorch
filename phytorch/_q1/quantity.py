@@ -31,7 +31,7 @@ class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls._generic_quantity_subtypes[cls._T] = cls
+        cls._generic_quantity_subtypes.setdefault(cls._T, cls)
 
     @classmethod
     def _from_bare_and_unit(cls, bare: _t, unit: Unit) -> GenericQuantity[_t]:
@@ -46,11 +46,12 @@ class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
     def _meta_update(self, other: GenericQuantity, /, unit=None, **kwargs):
         if unit is not False:
             kwargs['unit'] = unit(self.unit) if callable(unit) else unit if isinstance(unit, Unit) else self.unit
-        return super()._meta_update(
+        ret = super()._meta_update(
             other if isinstance(other, type(self)) else
             self._T.as_subclass(other, type(self)) if isinstance(other, self._T)
             else other,
             **kwargs)
+        return ret.value if unit is False and isinstance(ret, GenericQuantity) else ret
 
     def __repr__(self):
         with self.delegator_context:
@@ -72,37 +73,43 @@ class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
         with self.delegator_context:
             return self._T.__setitem__(self, key, value)
 
-    __add__, __radd__, __iadd__, __sub__, __rsub__, __isub__ = (QuantityDelegator() for _ in range(6))
+    __add__, __radd__, __iadd__, __sub__, __rsub__, __isub__ = (
+        QuantityDelegator() for _ in range(6))
 
     add = __add__
     sub = subtract = __sub__
 
-    __mul__ = ProductDelegator()
-    __rmul__ = ProductDelegator()
-    __imul__ = ProductDelegator(incremental=True)
-    ((__truediv__, __rtruediv__, __itruediv__),
+    ((__mul__, __rmul__, __imul__),
+     (__matmul__, __rmatmul__, __imatmul__),
+     (__truediv__, __rtruediv__, __itruediv__),
      (__floordiv__, __rfloordiv__, __ifloordiv__),
      (__mod__, __rmod__, __imod__)) = (
         (ProductDelegator(op=op), ProductDelegator(op=op, flip=True), ProductDelegator(op=op, incremental=True))
-        for op in (operator.truediv, operator.floordiv, operator.mod))
+        for op in (operator.mul, operator.matmul, operator.truediv, operator.floordiv, operator.mod))
 
     mul = multiply = __mul__
-    cross, dot, matmul, mm, mv, outer, vdot = (ProductDelegator() for _ in range(7))
+    matmul = __matmul__
     div = divide = true_divide = __truediv__
-    floor_divide = ProductDelegator(op=operator.floordiv)
+    floor_divide = __floordiv__
     fmod = remainder = __rmod__
 
+    cross, dot, mm, bmm, mv, inner, outer, kron, vdot = (
+        ProductDelegator() for _ in range(9))
+
     pow = __pow__ = PowerDelegator()
-    __ipow__ = PowerDelegator()
-    matrix_power = PowerDelegator()
+    __ipow__ = PowerDelegator(incremental=True)
+    matrix_power, float_power = (PowerDelegator() for _ in range(2))
 
     def __rpow__(self, other):
         if self.unit:
             raise TypeError('Cannot raise to the power of a quantity.')
         # TODO: other case of __rpow__
 
-    __eq__, __ne__, __gt__, __ge__, __lt__, __le__ = (QuantityDelegator(out_unit=False) for _ in range(6))
-    eq = equal = __eq__
+    # equal: (Q, Q) -> bool;  eq: (Q, Q) -> Q
+    equal = QuantityDelegator(out_unit=False)
+    __eq__, __ne__, __gt__, __ge__, __lt__, __le__ = (
+        QuantityDelegator(out_unit=False) for _ in range(6))
+    eq = __eq__
     ne = not_equal = __ne__
     ge = greater_equal = __ge__
     gt = greater = __gt__
@@ -112,28 +119,39 @@ class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
     sqrt = QuantityDelegator(out_unit=lambda unit: unit**Fraction(1, 2))
     rsqrt = QuantityDelegator(out_unit=lambda unit: unit**Fraction(-1, 2))
     square = QuantityDelegator(out_unit=lambda unit: unit**Fraction(2))
-    var = QuantityDelegator(out_unit=lambda unit: unit**Fraction(2))
-    reciprocal, inverse, pinverse = (QuantityDelegator(out_unit=lambda unit: unit**Fraction(-1))
+    var, cov = (QuantityDelegator(out_unit=lambda unit: unit**Fraction(2)) for _ in range(2))
+    reciprocal, inverse, pinverse = (QuantityDelegator(out_unit=lambda unit: ~unit)
                                      for i in range(3))
 
-    (exp, expm1, log, log10, log2, log1p, logaddexp, logaddexp2,
-     logsumexp, logcumsumexp, matrix_exp,
-     sinh, cosh, tanh, asinh, arcsinh, acosh, arccosh, atanh, arctanh,
-     digamma, erf, erfc, erfinv, lgamma, logit, i0,
-     mvlgamma, polygamma, sigmoid) = (
+    (exp, exp2, expm1, matrix_exp,
+     log, log2, log10, log1p, logaddexp, logaddexp2, logsumexp, logcumsumexp,
+     lgamma, igamma, igammac, digamma, polygamma, mvlgamma,
+     erf, erfc, erfinv, logit, sigmoid, i0,
+     sinh, cosh, tanh, asinh, acosh, atanh) = (
         QuantityDelegator(in_unit=Unit(), out_unit=False) for _ in range(30))
 
+    arcsinh = asinh
+    arccosh = acosh
+    arctanh = atanh
+
     # These are actually the same as the transcendental, but whatever
-    sin, cos, tan = (QuantityDelegator(in_unit=rad, out_unit=False) for _ in range(3))
+    sin, cos, tan, sinc = (QuantityDelegator(in_unit=rad, out_unit=False) for _ in range(4))
     (asin, arcsin), (acos, arccos), (atan, arctan) = (
         2 * (QuantityDelegator(in_unit=Unit(), out_unit=rad),) for _ in range(3))
 
-    atan2 = QuantityDelegator(out_unit=rad)
-    angle = QuantityDelegator(out_unit=rad)
+    atan2, angle = (QuantityDelegator(out_unit=rad) for i in range(2))
 
-    (sign, argmax, argmin, count_nonzero, bincount, argsort,
+    (all, any, argmax, argmin, count_nonzero, bincount, argsort,
      allclose, isclose, isfinite, isinf, isposinf, isneginf, isnan, isreal,
-     histc) = (QuantityDelegator(out_unit=False) for _ in range(15))
+     logical_and, logical_or, logical_not, logical_xor,
+     corrcoef) = (QuantityDelegator(out_unit=False) for _ in range(20))
+
+    def prod(self, *args, **kwargs):
+        raise NotImplementedError('\'prod\' is coming soon.')
+
+    def cumprod(self, *args, **kwargs):
+        raise NotImplementedError
+
 
     @property
     def value(self) -> _t:
@@ -147,15 +165,17 @@ class GenericQuantity(Delegating[_t], Meta, ValueProtocol):
             ret = self
 
         if self.unit == unit:
-            return self._meta_update(ret)
+            return ret
+
         if unit is not None:
             if ret.unit is not None:
                 ret = ret._T.clone(ret) if ret is self else ret
                 with ret.delegator_context:
                     # TODO: better handling of float()...
                     ret *= float(self.unit.to(unit))
-            return self._meta_update(ret, unit=unit)
-        return ret
+        else:
+            unit = self.unit
+        return self._meta_update(ret, unit=unit)
 
 
 class UnitFuncType(Enum):

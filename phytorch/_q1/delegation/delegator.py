@@ -8,11 +8,16 @@ from .delegating import Delegating
 
 @dataclass(eq=False)
 class Delegator:
-    name: str = dataclasses.field(init=False)
+    name: str = dataclasses.field(init=False, default=None)
     func_takes_self: bool = True
 
+    def set_func_takes_self(self, func_takes_self: bool):
+        self.func_takes_self = func_takes_self
+        return self
+
     def __set_name__(self, owner, name):
-        self.name = name
+        if self.name is None:
+            self.name = name
 
     def _get(self, func):
         def f(slf: Delegating, *args, **kwargs):
