@@ -1,4 +1,3 @@
-import threading
 from inspect import getattr_static
 from typing import Any, Callable, ClassVar, Iterable, Optional, Sequence, Union
 
@@ -7,7 +6,7 @@ from more_itertools import always_iterable, padded
 from torch import is_complex, Tensor
 from torch.autograd.function import _ContextMethodMixin
 
-from phytorch.utils.complex import as_complex_tensors
+from .complex import as_complex_tensors
 
 
 class TorchFunctionContext(_ContextMethodMixin):

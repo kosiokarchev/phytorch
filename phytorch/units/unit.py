@@ -5,9 +5,9 @@ from itertools import chain
 from math import isclose
 from numbers import Number, Real
 from operator import add, mul, neg
-from typing import cast, Iterable, TYPE_CHECKING, Union
+from typing import Any, cast, Iterable, TYPE_CHECKING, Union
 
-from typing_extensions import TypeAlias
+from typing_extensions import Protocol, runtime_checkable, TypeAlias
 
 from ..quantities import quantity
 from ..utils._typing import _bop, _fractionable, _mop, upcast, ValueProtocol
@@ -60,6 +60,12 @@ class UnitBase(dict):
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def __matmul__(self, other):
+        return self.__mul__(other)
+
+    def __rmatmul__(self, other):
+        return self.__matmul__(other)
+
     def __truediv__(self, other):
         return self.__mul__(other**(-1))
 
@@ -76,12 +82,13 @@ class ValuedFloat(float):
         return self
 
 
-class Unit(UnitBase, ValueProtocol):
+class Unit(UnitBase):
     def __init__(self, *args, value: Real = Fraction(1), name=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.value = value
         self.name = name
 
+        self.unit = self
         self.dimension = upcast(self, UnitBase)
 
     def set_name(self, name):
@@ -111,7 +118,9 @@ class Unit(UnitBase, ValueProtocol):
             return super().__mul__(other, value=self.value * other.value, name=f'{self!s} {other!s}', **kwargs)
         elif isinstance(other, Real):
             return self._make(self.items(), value=self.value * other, name=f'{other!s} {self.bracketed_name}', **kwargs)
-        elif not isinstance(other, quantity.GenericQuantity) and (cls := next((
+        elif isinstance(other, quantity.GenericQuantity):
+            return other.value * (other.unit * self)
+        elif (cls := next((
             cls for cls in quantity.GenericQuantity._generic_quantity_subtypes.keys()
             if isinstance(other, cls)
         ), None)) is not None:
@@ -127,5 +136,20 @@ class Unit(UnitBase, ValueProtocol):
     def isclose(self, other, *args, **kwargs):
         return isinstance(other, Unit) and isclose(self.value, other.value, *args, **kwargs) and super().__eq__(other)
 
+    @classmethod
+    def __torch_function__(cls, func, types, args=(), kwargs=None):
+        return next((
+            t.__torch_function__(func, types, args, kwargs)
+            for t in types if issubclass(t, quantity.GenericQuantity)
+        ), NotImplemented)
+
 
 _mul_other: TypeAlias = Union[Unit, Real, 'quantity.GenericQuantity']
+
+
+@runtime_checkable
+class Unitful(Protocol):
+    value: Any
+    unit: Unit
+
+    def to(self, unit: Unit) -> ValueProtocol: ...

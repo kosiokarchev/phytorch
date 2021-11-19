@@ -7,7 +7,7 @@ from phytorch.constants.constant import Constant
 from phytorch.units.si import metre
 from phytorch.units.unit import Unit
 
-from tests.common.strategies_units import constants_strategy
+from tests.common.strategies.units import constants_strategy
 
 
 def test_new_constant():

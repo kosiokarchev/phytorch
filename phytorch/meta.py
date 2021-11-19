@@ -29,8 +29,9 @@ class Meta(ABC):
         self = super().__new__(cls, *args, **kwargs)
         return self._meta_update(self, **meta_kwargs)
 
-    def _meta_update(self, other: Meta, /, **kwargs):
-        if isinstance(other, type(self)):
+    @classmethod
+    def _meta_update(cls, other: Meta, /, **kwargs):
+        if isinstance(other, cls):
             consume(setattr(other, key, kwargs[key])
                     for key in other._meta_attributes if key in kwargs)
         return other

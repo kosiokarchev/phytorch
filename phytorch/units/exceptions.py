@@ -1,0 +1,2 @@
+class UnitError(Exception):
+    pass

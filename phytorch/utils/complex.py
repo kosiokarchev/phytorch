@@ -27,6 +27,8 @@ def as_complex_tensors(*args: Tensor):
 
 
 _T = TypeVar('_T')
+
+
 # TODO: Python 3.10: ArgSpec
 def with_complex_args(f: _T) -> _T:
     def _f(*args: Tensor):
