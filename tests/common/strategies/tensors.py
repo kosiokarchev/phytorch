@@ -3,13 +3,15 @@ from itertools import repeat
 import torch
 from hypothesis import strategies as st
 from hypothesis.extra import numpy as st_numpy
+from hypothesis.extra.numpy import array_shapes
 
 
-random_tensors = st.lists(st.integers(1, 16), min_size=0, max_size=4).map(torch.rand)
+shapes_strategy = array_shapes(min_dims=1, max_dims=4, min_side=1, max_side=16)
+random_tensors = shapes_strategy.map(torch.rand)
 
 
 def n_broadcastable_random_tensors(n):
-    return st_numpy.mutually_broadcastable_shapes(num_shapes=2, max_dims=4, max_side=14).map(
+    return st_numpy.mutually_broadcastable_shapes(num_shapes=2, max_dims=4, max_side=16).map(
         lambda bs: map(torch.rand, bs.input_shapes)
     )
 

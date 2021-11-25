@@ -34,7 +34,7 @@ class BaseAnalyticFLRWDriver(FLRWDriver, ABC):
         return (r-1 for r in roots(*self._epoly_coeffs, force_numeric=self._roots_force_numeric))
 
     def _fix_dimless(self, val: _TN) -> _TN:
-        return val.real / self._epoly_leading**0.5
+        return getattr(val, 'real', val) / self._epoly_leading**0.5
 
 
 class BaseAnalyticLambdaCDM(BaseAnalyticFLRWDriver, special.LambdaCDM, ABC):

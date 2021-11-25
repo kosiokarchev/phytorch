@@ -1,10 +1,8 @@
-from itertools import starmap
 from typing import Iterable
 
 import torch
 from _pytest.python_api import raises
 from hypothesis import given
-from more_itertools import pairwise
 from torch import Tensor
 
 from phytorch.quantities.tensor_quantity import TensorQuantity
@@ -12,13 +10,10 @@ from phytorch.units._si.base import meter, second
 from phytorch.units.exceptions import UnitError
 from phytorch.units.unit import Unit
 
+from tests.common import are_same_view
 from tests.common.strategies.tensors import n_broadcastable_random_tensors, random_tensors
 from tests.common.strategies.units import units_strategy
 from tests.quantities.quantity_utils import _VT, ConcreteQuantity
-
-
-def are_same_view(*ts: Tensor):
-    return all(starmap(Tensor.is_set_to, pairwise(ts)))
 
 
 def assert_has_value_and_unit(q: ConcreteQuantity, value: _VT, unit: Unit):

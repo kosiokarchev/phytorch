@@ -5,12 +5,12 @@ from itertools import chain
 from math import isclose
 from numbers import Number, Real
 from operator import add, mul, neg
-from typing import Any, cast, Iterable, TYPE_CHECKING, Union
+from typing import cast, Iterable, TYPE_CHECKING, Union
 
-from typing_extensions import Protocol, runtime_checkable, TypeAlias
+from typing_extensions import TypeAlias
 
-from ..quantities import quantity
-from ..utils._typing import _bop, _fractionable, _mop, upcast, ValueProtocol
+from .. import quantities
+from ..utils._typing import _bop, _fractionable, _mop, upcast
 
 
 class Dimension(str):
@@ -118,13 +118,13 @@ class Unit(UnitBase):
             return super().__mul__(other, value=self.value * other.value, name=f'{self!s} {other!s}', **kwargs)
         elif isinstance(other, Real):
             return self._make(self.items(), value=self.value * other, name=f'{other!s} {self.bracketed_name}', **kwargs)
-        elif isinstance(other, quantity.GenericQuantity):
+        elif isinstance(other, quantities.quantity.GenericQuantity):
             return other.value * (other.unit * self)
         elif (cls := next((
-            cls for cls in quantity.GenericQuantity._generic_quantity_subtypes.keys()
+            cls for cls in reversed(quantities.quantity.GenericQuantity._generic_quantity_subtypes.keys())
             if isinstance(other, cls)
         ), None)) is not None:
-            return quantity.GenericQuantity._generic_quantity_subtypes[cls]._from_bare_and_unit(cast(cls, other), unit=self)
+            return quantities.quantity.GenericQuantity._generic_quantity_subtypes[cls]._from_bare_and_unit(cast(cls, other), unit=self)
         return NotImplemented
 
     if TYPE_CHECKING:
@@ -138,18 +138,11 @@ class Unit(UnitBase):
 
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
-        return next((
-            t.__torch_function__(func, types, args, kwargs)
-            for t in types if issubclass(t, quantity.GenericQuantity)
-        ), NotImplemented)
+        # TODO: think about this
+        return next(
+            filter(quantities.tensor_quantity.TensorQuantity.__subclasscheck__, types),
+            quantities.tensor_quantity.TensorQuantity
+        ).__torch_function__(func, types, args, kwargs)
 
 
-_mul_other: TypeAlias = Union[Unit, Real, 'quantity.GenericQuantity']
-
-
-@runtime_checkable
-class Unitful(Protocol):
-    value: Any
-    unit: Unit
-
-    def to(self, unit: Unit) -> ValueProtocol: ...
+_mul_other: TypeAlias = Union[Unit, Real, 'quantities.quantity.GenericQuantity']

@@ -3,6 +3,7 @@ from typing import Optional, Sequence
 
 import torch
 from torch import Tensor
+from torch.overrides import wrap_torch_function
 
 from ..utils._typing import _TN
 from ..utils.complex import as_complex_tensors
@@ -65,10 +66,12 @@ class Roots(torch.autograd.Function):
         return (None,) + tuple((grads.conj() * torch.stack(grad_outputs)).sum(1).unbind(0))
 
 
+@wrap_torch_function(lambda *args, **kwargs: args)
 def roots(*coeffs: _TN, force_numeric=False):
     return Roots.apply(force_numeric, *as_complex_tensors(*coeffs))
 
 
+@wrap_torch_function(lambda *args, **kwargs: args)
 def sroots(*coeffs: _TN, dim: int = 0, force_numeric=False):
     return torch.stack(roots(*coeffs, force_numeric=force_numeric), dim=dim)
 

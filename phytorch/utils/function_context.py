@@ -5,6 +5,7 @@ import torch
 from more_itertools import always_iterable, padded
 from torch import is_complex, Tensor
 from torch.autograd.function import _ContextMethodMixin
+from torch.overrides import wrap_torch_function
 
 from .complex import as_complex_tensors
 
@@ -104,6 +105,11 @@ class TorchFunction(torch.autograd.Function):
 
 class CimplMixin(TorchFunction):
     _impl_func: Callable[[Tensor, ...], Union[Tensor, tuple[Tensor, ...]]]
+
+    @classmethod
+    @wrap_torch_function(lambda cls, *args: tuple(filter(torch.is_tensor, args)))
+    def apply(cls, *args):
+        return super().apply(*args)
 
     @classmethod
     def _forward(cls, ctx, *args):

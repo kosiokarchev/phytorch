@@ -10,7 +10,6 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr --extended-la
 find_package(Python3 COMPONENTS Development.Module)
 include_directories(${Python3_INCLUDE_DIRS})
 
-set(Torch_DIR ~/.local/lib/python3.9/site-packages/torch/share/cmake/Torch)
 find_package(Torch)
 
 message("${TORCH_INCLUDE_DIRS}")

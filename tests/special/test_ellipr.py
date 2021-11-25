@@ -16,10 +16,10 @@ from phytorch.utils.symmetry import product
 from tests.common.cases import BaseCasesTest
 from tests.common.closeness import close, distinct, nice_and_close
 from tests.common.dtypes import AllDtypeTest, DoubleDtypeTest
-from tests.common.strategies import (_complex_number, _complex_number_, _complex_numbers, _cut_plane_,
-                                     _nonnegative_number,
-                                     _nonzero_complex_number, _nonzero_cut_plane, _positive_number,
-                                     _positive_numbers)
+from tests.common.strategies.numbers import (
+    _complex_number, _complex_number_, _complex_numbers, _cut_plane_,
+    _nonnegative_number, _nonzero_complex_number, _nonzero_cut_plane,
+    _positive_number, _positive_numbers)
 
 
 ELLIPR_FUNCMAP = (

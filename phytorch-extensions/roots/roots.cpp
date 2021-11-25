@@ -12,7 +12,7 @@ auto torch_roots(const std::array<torch::Tensor, n>& inputs) {
     iterconfig.check_all_same_device(true);
     iterconfig.promote_inputs_to_common_dtype(true).promote_integer_inputs_to_float(true);
     #pragma unroll
-    for (auto i=0; i<n; ++i) iterconfig.add_output(torch::Tensor());
+    for (auto i=0; i<n; ++i) iterconfig.add_owned_output(torch::Tensor());
     for (auto i=0; i<n; ++i) iterconfig.add_input(inputs[i]);
 
     auto iter = iterconfig.build();

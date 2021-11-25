@@ -14,7 +14,7 @@ from phytorch.special.ellipr import elliprc
 from tests.common.cases import BaseCasesTest
 from tests.common.closeness import close, nice_and_close
 from tests.common.dtypes import DoubleDtypeTest, make_dtype_tests
-from tests.common.strategies import JUST_FINITE
+from tests.common.strategies.numbers import JUST_FINITE
 
 
 COMPLETE = ellipk, ellipe, ellipd, ellippi

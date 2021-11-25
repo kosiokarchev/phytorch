@@ -21,8 +21,11 @@ from typing_extensions import TypeAlias
 from . import quantity, tensor_quantity
 from ..units.angular import radian
 from ..units.exceptions import UnitError
-from ..units.unit import Unit, Unitful
+from ..units.unit import Unit
 from ..utils import AutoUnpackable, pytree
+
+
+_Unitful = (quantity.GenericQuantity, Unit)
 
 
 @dataclass
@@ -77,7 +80,7 @@ class BasicDimSpec(AutoUnpackable, AbstractDimSpec):
 
     def __call__(self, *args) -> tuple[Sequence, BasePostprocessor]:
         return args, BasePostprocessor(
-            pytree.tree_map(lambda a: a.unit if isinstance(a, Unitful) else False, args[0])
+            pytree.tree_map(lambda a: a.unit if isinstance(a, _Unitful) else False, args[0])
             if self.ret is None else self.ret)
 
 
@@ -124,7 +127,7 @@ class MultiproductDimSpec(BasicDimSpec):
         _args, treespec = pytree.tree_flatten(args)
 
         retargs, units = zip(*(
-            (arg.value, arg.unit) if isinstance(arg, Unitful) else (arg, None)
+            (arg.value, arg.unit) if isinstance(arg, _Unitful) else (arg, None)
             for arg in _args))
         return pytree.tree_unflatten(retargs, treespec), BasePostprocessor(reduce(operator.mul, filter(
             partial(operator.is_not, None), units
@@ -137,14 +140,14 @@ class PowerDimSpec(BasicDimSpec):
         if self.flipped:
             base, exponent = exponent, base
 
-        if isinstance(exponent, Unitful):
+        if isinstance(exponent, _Unitful):
             if exponent.unit.dimension:
                 raise UnitError('can only raise to dimensionless power.')
             exponent = exponent.to(Unit()).value
 
         return (base, exponent) if not self.flipped else (exponent, base), BasePostprocessor(
             base.unit**(exponent if isinstance(exponent, Number) else float(exponent))
-            if isinstance(base, Unitful) else False)
+            if isinstance(base, _Unitful) else False)
 
 
 @dataclass
@@ -167,12 +170,12 @@ class DimSpec(BasicDimSpec):
                         if unit in ctx:
                             unit = ctx[unit]
                         else:
-                            ctx[unit] = arg.unit if isinstance(arg, Unitful) else Unit()
+                            ctx[unit] = arg.unit if isinstance(arg, _Unitful) else Unit()
                     elif isinstance(unit, Eval):
                         unit = unit(ctx)
 
                     if isinstance(unit, Unit):
-                        if isinstance(arg, Unitful):
+                        if isinstance(arg, _Unitful):
                             if not arg.unit.dimension == unit.dimension:
                                 raise UnitError(f'expected {unit.dimension} but got {arg.unit.dimension}.')
                             arg = arg.to(unit)

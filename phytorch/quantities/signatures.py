@@ -4,6 +4,9 @@ from itertools import repeat
 import torch.overrides
 
 
+_self_signature = inspect.signature(lambda self: None)
+
+
 def _forall(keys, value):
     return dict(zip(keys, repeat(value)))
 
@@ -40,11 +43,10 @@ class SigDict(dict):
             ret = self[torch.trapezoid]
         elif func is torch.Tensor.put:
             ret = self[torch.put]
+        elif func.__name__ == '__get__':
+            ret = _self_signature
         else:
             _func = my_overrides.get(func, func)
-
-            if func.__name__ == '__get__':
-                _func = lambda self: None
 
             try:
                 ret = inspect.signature(_func)
@@ -72,7 +74,7 @@ class SigDict(dict):
                     pass
 
         if ret is None:
-            ret = inspect.signature(testing_overrides[func])
+            ret = inspect.signature(testing_overrides[func]) if func in testing_overrides else None
 
         self[func] = ret
         return ret

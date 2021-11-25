@@ -11,7 +11,7 @@ from pytest import fixture, param
 
 from phytorch.special.elliptic_reduction.mp import MPEllipticReduction as ER
 from tests.common.closeness import distinct
-from tests.common.strategies import _cut_plane_, _positive_complex_, _real_number_
+from tests.common.strategies.numbers import _cut_plane_, _positive_complex_, _real_number_
 
 
 SMALL = 1e-3

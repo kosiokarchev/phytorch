@@ -18,7 +18,7 @@ from phytorch.quantities.quantity import GenericQuantity
 from phytorch.units.angular import deg, radian
 from phytorch.units.exceptions import UnitError
 from phytorch.units.si import centimeter, gram, second
-from phytorch.units.unit import Dimension, Unit, Unitful
+from phytorch.units.unit import Dimension, Unit
 from phytorch.utils import copy_func, pytree
 
 from tests.common.strategies.tensors import random_tensors
@@ -772,7 +772,7 @@ class TestProduct(TestQfuncsBase):
         res = func(*vals)
         for args in itertools.product(*((v, v*u) for v, u in zip(vals, units))):
             self._compare(func(*args), res * reduce(op, (
-                _.unit if isinstance(_, Unitful) else 1 for _ in args)))
+                _.unit if isinstance(_, (Unit, GenericQuantity)) else 1 for _ in args)))
 
     @mark.parametrize('func, op', tuple(map(_tfparam, (
         *zip((
