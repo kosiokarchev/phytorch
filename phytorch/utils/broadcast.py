@@ -34,6 +34,17 @@ def broadcast_gather(input, dim, index, sparse_grad=False, index_ndim=1):
     ) if input.ndim > index.ndim else index, sparse_grad=sparse_grad).reshape(*index.shape[:-1], *index_shape, *input.shape[dim % input.ndim + 1:])
 
 
+def broadcast_cat(ts: Iterable[Tensor], dim=-1):
+    return torch.cat(broadcast_except(*ts, dim=dim), dim)
+
+
+def insert_dims(t: Tensor, loc: int, shape: Size):
+    loc = loc % (t.ndim + 1) if loc < 0 else (loc % t.ndim) + 1
+    return t.reshape(t.shape[:loc] + len(shape)*(1,) + t.shape[loc:]).expand(
+        t.shape[:loc] + shape + t.shape[loc:]
+    )
+
+
 # TODO: improve so that nbatch=-1 means "auto-derive nbatch from number of
 #  matching dimensions on the left"
 def pad_dims(*tensors: Tensor, ndim: int = None, nbatch: int = 0) -> list[Tensor]:
