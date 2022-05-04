@@ -36,6 +36,6 @@ DEFINE_COMPLEX_FUNCTION(digamma, (z)) {
     }
     d += c[0];
 
-    auto zp = z + ltrl(g - h);
-    return log(zp) + (n / d - ltrl(g) / zp);
+    auto zp = z + ltrl(polygamma_g - polygamma_h);
+    return log(zp) + (n / d - ltrl(polygamma_g) / zp);
 }

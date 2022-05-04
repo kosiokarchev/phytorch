@@ -1,14 +1,13 @@
 #pragma once
 
-#include <torch/extension.h>
-#include <ATen/TensorIterator.h>
+#include "torch/extension.h"
+#include "ATen/TensorIterator.h"
 
 #include "preprocessor.h"
 
 
 template <int n>
-// auto implement(void (*func)(at::TensorIteratorBase&), std::array<torch::Tensor, n> inputs) {
-auto implement(std::function<void(at::TensorIteratorBase&)> func, std::array<torch::Tensor, n> inputs) {
+auto implement(const std::function<void(at::TensorIteratorBase&)>& func, std::array<torch::Tensor, n> inputs) {
     at::TensorIteratorConfig iterconfig;
     iterconfig.check_all_same_device(true);
     iterconfig.promote_inputs_to_common_dtype(true).promote_integer_inputs_to_float(true);

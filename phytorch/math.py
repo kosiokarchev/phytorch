@@ -3,11 +3,15 @@ from cmath import pi
 
 import torch
 
-from phytorch.utils.complex import to_complex
+from .utils.complex import to_complex
 
 
 def realise(x):
     return x if torch.is_tensor(x) and not torch.is_complex(x) else x.real
+
+
+def conjugate(x):
+    return (x.conj() if torch.is_complex(x) else x) if torch.is_tensor(x) else x.conjugate()
 
 
 def complexify(x):
@@ -41,3 +45,4 @@ exp = _overload(torch.exp, cmath.exp)
 log10 =_overload(torch.log10, cmath.log10)
 sin = _overload(torch.sin, cmath.sin)
 asinh = _overload(torch.asinh, cmath.asinh)
+cosh = _overload(torch.cosh, cmath.cosh)

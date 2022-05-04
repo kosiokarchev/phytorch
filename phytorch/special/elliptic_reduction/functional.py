@@ -4,11 +4,11 @@ from itertools import chain
 from typing import Optional, Sequence
 
 import torch
-from phytorch.utils.complex import as_complex_tensors
 from torch import Tensor
 from torch.autograd import Function
 
 from .core import EllipticReduction
+from ...utils.complex import as_complex_tensors
 from ...utils.function_context import TorchFunctionContext
 
 

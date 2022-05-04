@@ -1,5 +1,6 @@
 # Based on the astropy test suite (v4.2.1)
 # (https://github.com/astropy/astropy/blob/v4.2.1/astropy/cosmology/tests/test_cosmology.py)
+import re
 from io import StringIO
 from typing import Type
 
@@ -9,11 +10,12 @@ import torch
 from pytest import mark
 from torch import tensor
 
-import phytorch.cosmology.drivers.analytic
-import phytorch.cosmology.drivers.analytic_diff
-import phytorch.cosmology.special
+import phytorch.cosmology.drivers.abstract as abstract
+import phytorch.cosmology.drivers.analytic as analytic
+import phytorch.cosmology.drivers.analytic_diff as analytic_diff
+import phytorch.cosmology.drivers.odeint as odeint
+import phytorch.cosmology.special as special
 from phytorch.constants import codata2014, G as Newton_G
-from phytorch.cosmology.special import AbstractFlatLambdaCDMR, AbstractLambdaCDMR
 from phytorch.units.astro import Gpc, Gyr, Mpc
 from phytorch.units.si import cm, gram, kelvin, km, s
 from phytorch.units.unit import Unit
@@ -33,9 +35,7 @@ H704 = 70.4 * km/s/Mpc
 def test_critical_density():
     fac = (Newton_G / codata2014.G).to(Unit())
 
-    cosmo = AbstractFlatLambdaCDMR()
-    cosmo.H0 = H704
-    cosmo.Om0 = 0.272
+    cosmo = abstract.FlatLambdaCDMR(H0=H704, Om0=0.272)
 
     # constants defined only so accurately
     assert ((cosmo.critical_density0 * fac).to(gram / cm**3) - 9.309668456020899e-30) < 1e-9
@@ -46,8 +46,9 @@ def test_critical_density():
 
 
 def test_xtfuncs():
-    cosmo = AbstractLambdaCDMR()
-    cosmo.H0, cosmo.Om0, cosmo.Ode0, cosmo.Neff, cosmo.Tcmb0 = H70, 0.3, 0.5, 3.04, 2.725 * kelvin
+    cosmo = abstract.LambdaCDMR(
+        H0=H70, Om0=0.3, Ode0=0.5, Neff=3.04, Tcmb0=2.725 * kelvin
+    )
 
     z = tensor([2, 3.2])
     assert close(cosmo.lookback_time_integrand(tensor(3)), 0.052218976654969378)
@@ -57,10 +58,7 @@ def test_xtfuncs():
 
 
 def test_zeroing():
-    cosmo = AbstractLambdaCDMR()
-    cosmo.Om0 = 0.27
-    cosmo.Ode0 = 0
-    cosmo.Or0 = 0
+    cosmo = abstract.LambdaCDMR(Om0=0.27, Ode0=0, Or0=0)
 
     assert cosmo.Ode(1.5) == 0
     assert (cosmo.Ode(Z) == ZERO).all()
@@ -73,9 +71,7 @@ def test_zeroing():
 
 
 def test_matter():
-    cosmo = AbstractFlatLambdaCDMR()
-    cosmo.Om0 = 0.3
-    cosmo.Ob0 = 0.045
+    cosmo = abstract.FlatLambdaCDMR(Om0=0.3, Ob0=0.045)
 
     assert cosmo.Om(0) == 0.3
     assert cosmo.Ob(0) == 0.045
@@ -86,16 +82,13 @@ def test_matter():
 
 
 def test_ocurv():
-    cosmo = AbstractFlatLambdaCDMR()
-    cosmo.Om0 = 0.3
+    cosmo = abstract.FlatLambdaCDMR(Om0=0.3)
 
     assert cosmo.Ok0 == 0
     assert cosmo.Ok(0) == 0
     assert (cosmo.Ok(Z) == ZERO).all()
 
-    cosmo = AbstractLambdaCDMR()
-    cosmo.Om0 = 0.3
-    cosmo.Ode0 = 0.5
+    cosmo = abstract.LambdaCDMR(Om0=0.3, Ode0=0.5)
     assert abs(cosmo.Ok0 - 0.2) < SMALL
     assert abs(cosmo.Ok(0) - 0.2) < SMALL
     assert close(cosmo.Ok(Z), [0.2, 0.22929936, 0.21621622, 0.17307692])
@@ -104,27 +97,21 @@ def test_ocurv():
 
 
 def test_ode():
-    cosmo = AbstractFlatLambdaCDMR()
-    cosmo.Om0 = 0.3
+    cosmo = abstract.FlatLambdaCDMR(Om0=0.3)
 
     assert cosmo.Ode(0) == cosmo.Ode0
     assert close(cosmo.Ode(Z), [0.7, 0.408759, 0.2258065, 0.07954545])
 
 
 def test_tcmb():
-    cosmo = AbstractFlatLambdaCDMR()
-    cosmo.H0 = H704
-    cosmo.Om0 = 0.272
-    cosmo.Tcmb0 = 2.5 * kelvin
+    cosmo = abstract.FlatLambdaCDMR(H0=H704, Om0=0.272, Tcmb0=2.5*kelvin)
 
     assert cosmo.Tcmb(2) == 7.5 * kelvin
     assert (cosmo.Tcmb(tensor([0, 1, 2, 3, 9.])).to(kelvin).value == tensor([2.5, 5, 7.5, 10, 25])).all()
 
 
 def test_efunc_vs_invefunc():
-    cosmo = AbstractLambdaCDMR()
-    cosmo.Om0 = 0.3
-    cosmo.Ode0 = 0.7
+    cosmo = abstract.LambdaCDMR(Om0=0.3, Ode0=0.7)
 
     assert cosmo.efunc(0.5) * cosmo.inv_efunc(0.5) == 1
     assert (cosmo.efunc(Z) * cosmo.inv_efunc(Z) == ONE).all()
@@ -132,13 +119,13 @@ def test_efunc_vs_invefunc():
 
 
 class BaseLambdaCDMDriverTest:
-    flat_cosmo_cls: Type[phytorch.cosmology.special.BaseFlatLambdaCDM]
-    cosmo_cls: Type[phytorch.cosmology.special.BaseLambdaCDM]
+    flat_cosmo_cls: Type[special.FlatLambdaCDM]
+    cosmo_cls: Type[special.LambdaCDM]
 
 
 class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
-    flat_cosmo_cls: Type[phytorch.cosmology.special.FlatLambdaCDM]
-    cosmo_cls: Type[phytorch.cosmology.special.LambdaCDM]
+    flat_cosmo_cls: Type[special.FlatLambdaCDM]
+    cosmo_cls: Type[special.LambdaCDM]
 
     @with_default_double
     @mark.parametrize(('func', 'vals', 'unit', 'rtol'), (
@@ -149,23 +136,19 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         #         (https://ui.adsabs.harvard.edu/abs/2006PASP..118.1711W)
         # Kempner: http://www.kempner.net/cosmic.php
         # iCosmos: http://www.icosmos.co.uk/index.html
-        (phytorch.cosmology.special.FlatLambdaCDM.comoving_distance,
+        (special.FlatLambdaCDM.comoving_distance,
          (3364.5, 3364.8, 3364.7988), Mpc, 1e-4),
-        (phytorch.cosmology.special.FlatLambdaCDM.angular_diameter_distance,
+        (special.FlatLambdaCDM.angular_diameter_distance,
          (1682.3, 1682.4, 1682.3994), Mpc, 1e-4),
-        (phytorch.cosmology.special.FlatLambdaCDM.luminosity_distance,
+        (special.FlatLambdaCDM.luminosity_distance,
          (6729.2, 6729.6, 6729.5976), Mpc, 1e-4),
-        (phytorch.cosmology.special.FlatLambdaCDM.lookback_time,
+        (special.FlatLambdaCDM.lookback_time,
          (7.841, 7.84178, 7.843), Gyr, 1e-3),
-        (phytorch.cosmology.special.FlatLambdaCDM.lookback_distance,
+        (special.FlatLambdaCDM.lookback_distance,
          (2404.0, 2404.24, 2404.4), Mpc, 1e-3),
     ))
     def test_flat_z1(self, func, vals, unit, rtol):
-        cosmo = self.flat_cosmo_cls()
-        cosmo.H0 = H70
-        cosmo.Om0 = 0.27
-
-        assert close(getattr(cosmo, func.__name__)(1).to(unit).value, vals, rtol=rtol)
+        assert close(getattr(self.flat_cosmo_cls(H0=H70, Om0=0.27), func.__name__)(1).to(unit).value, vals, rtol=rtol)
 
     @mark.parametrize('Om0, Ode0, vals', (
         (0.27, 0.73, (29.123, 159.529, 630.427, 1178.531, 2181.485, 3654.802)),
@@ -182,10 +165,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         #      (20.501, 99.019, 380.278, 747.049, 1558.363, 3123.814),
         #      (12.619, 44.708, 114.904, 173.709, 258.82, 358.992))
         # ):
-        c = self.cosmo_cls()
-        c.H0, c.Om0, c.Ode0 = H70, Om0, Ode0
-
-        assert close(c.comoving_volume(z).to(Gpc**3).value, vals, rtol=1e-2)
+        assert close(self.cosmo_cls(H0=H70, Om0=Om0, Ode0=Ode0).comoving_volume(z).to(Gpc**3).value, vals, rtol=1e-2)
 
     # TODO: (requires integration) test_differential_comoving_volume
 
@@ -298,8 +278,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         (0.3, 0.7, icosmo_flat), (0.3, 0.1, icosmo_open), (2, 0.1, icosmo_closed)
     ))
     def test_flat_open_closed_icosmo(self, Om0, Ode0, data):
-        cosmo = self.cosmo_cls()
-        cosmo.H0, cosmo.Om0, cosmo.Ode0 = H70, Om0, Ode0
+        cosmo = self.cosmo_cls(H0=H70, Om0=Om0, Ode0=Ode0)
 
         z, dm, da, dl = (tensor(_, dtype=torch.get_default_dtype())
                          for _ in np.loadtxt(StringIO(data), unpack=True))
@@ -309,23 +288,20 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         assert close(cosmo.luminosity_distance(z).to(Mpc).value, dl)
 
     def test_distmod(self):
-        cosmo = self.flat_cosmo_cls()
-        cosmo.H0, cosmo.Om0 = H704, 0.272
+        cosmo = self.flat_cosmo_cls(H0=H704, Om0=0.272)
 
         assert cosmo.hubble_distance.to(Mpc) == 4258.415596590909
         assert close(cosmo.distmod(tensor([1, 5])), [44.124857, 48.40167258])
 
     @with_default_double
     def test_negdistmod(self):
-        cosmo = self.cosmo_cls()
-        cosmo.H0, cosmo.Om0, cosmo.Ode0 = H70, 0.2, 1.3
+        cosmo = self.cosmo_cls(H0=H70, Om0=0.2, Ode0=1.3)
         z = tensor([50, 100])
         assert close(cosmo.luminosity_distance(z).to(Mpc).value, [16612.44047622, -46890.79092244])
         assert close(cosmo.distmod(z), [46.102167189, 48.355437790944])
 
     def test_comoving_distance_z1z2(self):
-        cosmo = self.cosmo_cls()
-        cosmo.Om0, cosmo.Ode0 = 0.3, 0.8
+        cosmo = self.cosmo_cls(Om0=0.3, Ode0=0.8)
 
         with pytest.raises(RuntimeError):
             cosmo.comoving_distance_z1z2(tensor((1, 2)), tensor((3, 4, 5)))
@@ -342,8 +318,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         (1, 1756.1435599923348),
     ))
     def test_distance_in_special_cosmologies(self, Om0, val):
-        cosmo = self.flat_cosmo_cls()
-        cosmo.Om0 = Om0
+        cosmo = self.flat_cosmo_cls(Om0=Om0)
 
         assert close(cosmo.comoving_distance(0).to(Mpc).value, 0)
         assert close(cosmo.comoving_distance(1).to(Mpc).value, val)
@@ -352,8 +327,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
     def test_comoving_transverse_distance_z1z2(self):
         z1, z2 = tensor([0, 0, 2, 0.5, 1]), tensor([2, 1, 1, 2.5, 1.1])
 
-        cosmo = self.flat_cosmo_cls()
-        cosmo.Om0 = 0.3
+        cosmo = self.flat_cosmo_cls(Om0=0.3)
 
         with pytest.raises(RuntimeError):
             cosmo.comoving_transverse_distance_z1z2(tensor((1, 2)), tensor((3, 4, 5)))
@@ -363,8 +337,7 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         assert close(cosmo.comoving_distance_z1z2(z1, z2).to(Mpc).value,
                      cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value)
 
-        cosmo = self.flat_cosmo_cls()
-        cosmo.Om0 = 1.5
+        cosmo = self.flat_cosmo_cls(Om0=1.5)
         assert close(
             cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value,
             [2202.72682564, 1559.51679971, -643.21002593, 1408.36365679, 85.09286258]
@@ -372,23 +345,20 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         assert close(cosmo.comoving_distance_z1z2(z1, z2).to(Mpc).value,
                      cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value)
 
-        cosmo = self.cosmo_cls()
-        cosmo.Om0, cosmo.Ode0 = 0.3, 0.5
+        cosmo = self.cosmo_cls(Om0=0.3, Ode0=0.5)
         assert close(
             cosmo.comoving_transverse_distance_z1z2(z1, z2).to(Mpc).value,
             [3535.931375645655, 2226.430046551708, -1208.6817970036532, 2595.567367601969, 151.36592003406884]
         )
 
-        cosmo = self.cosmo_cls()
-        cosmo.Om0, cosmo.Ode0 = 1, 0.2
+        cosmo = self.cosmo_cls(Om0=1, Ode0=0.2)
         assert close(
             cosmo.comoving_transverse_distance_z1z2(0.1, tensor([0, 0.1, 0.2, 0.5, 1.1, 2])).to(Mpc).value,
             [-281.31602666724865, 0, 248.58093707820436, 843.9331377460543, 1618.6104987686672, 2287.5626543279927]
         )
 
     def test_angular_diameter_distance_z1z2(self):
-        cosmo = self.flat_cosmo_cls()
-        cosmo.H0, cosmo.Om0 = H704, 0.272
+        cosmo = self.flat_cosmo_cls(H0=H704, Om0=0.272)
 
         with pytest.raises(RuntimeError):
             cosmo.angular_diameter_distance_z1z2(tensor((1, 2)), tensor((3, 4, 5)))
@@ -404,25 +374,22 @@ class BaseLambdaCDMTest(BaseLambdaCDMDriverTest):
         )
 
         # Non-flat (positive Ok0) test
-        cosmo = self.cosmo_cls()
-        cosmo.H0, cosmo.Om0, cosmo.Ode0 = H704, 0.2, 0.5
+        cosmo = self.cosmo_cls(H0=H704, Om0=0.2, Ode0=0.5)
         assert close(cosmo.angular_diameter_distance_z1z2(1, 2).to(Mpc).value, 620.1175337852428)
 
         # Non-flat (negative Ok0) test
-        cosmo = self.cosmo_cls()
-        cosmo.Om0, cosmo.Ode0 = 2, 1
+        cosmo = self.cosmo_cls(Om0=2, Ode0=1)
         assert close(cosmo.angular_diameter_distance_z1z2(1, 2).to(Mpc).value, 228.42914659246014)
 
     def test_absorption_distance(self):
-        cosmo = self.flat_cosmo_cls()
-        cosmo.H0, cosmo.Om0 = H704, 0.272
+        cosmo = self.flat_cosmo_cls(H0=H704, Om0=0.272)
         assert close(cosmo.absorption_distance(3), 7.98685853)
         assert close(cosmo.absorption_distance(tensor([1, 3])), [1.72576635, 7.98685853])
 
 
 class BaseLambdaCDMRTest(BaseLambdaCDMDriverTest):
-    flat_cosmo_cls: Type[phytorch.cosmology.special.FlatLambdaCDMR]
-    cosmo_cls: Type[phytorch.cosmology.special.LambdaCDMR]
+    flat_cosmo_cls: Type[special.FlatLambdaCDMR]
+    cosmo_cls: Type[special.LambdaCDMR]
 
     @with_default_double
     def test_ogamma(self):
@@ -436,10 +403,9 @@ class BaseLambdaCDMRTest(BaseLambdaCDMDriverTest):
             (3.04, 2.725, [1651.76, 857.817, 26.7688, 13.5841]),
             (3.04, 4, [1651.21, 856.411, 26.4845, 13.4028]),
         ):
-            cosmo = self.flat_cosmo_cls()
-            cosmo.H0, cosmo.Om0, cosmo.Neff, cosmo.Tcmb0 = H70, 0.3, Neff, Tcmb0*kelvin
-
-            assert close(cosmo.angular_diameter_distance(z).to(Mpc).value, vals, rtol=5e-4)
+            assert close(self.flat_cosmo_cls(
+                H0=H70, Om0=0.3, Neff=Neff, Tcmb0=Tcmb0*kelvin
+            ).angular_diameter_distance(z).to(Mpc).value, vals, rtol=5e-4)
 
         # from astropy: Just to be really sure, we also do a version where the
         # integral is analytic, which is a Ode = 0 flat universe. In this case
@@ -453,30 +419,22 @@ class BaseLambdaCDMRTest(BaseLambdaCDMDriverTest):
             Or0 = (Ogamma0h2 + Onu0h2) / 0.7**2
             vals = 2 * hubdis * (((1 + Or0*z) / (1+z))**0.5 - 1) / (Or0 - 1)
 
-            cosmo = self.flat_cosmo_cls()
-            cosmo.H0, cosmo.Neff, cosmo.Tcmb0, cosmo.Ode0 = H70, Neff, Tcmb0 * kelvin, 0
-
+            cosmo = self.flat_cosmo_cls(H0=H70, Om0=1.)
+            cosmo.Neff, cosmo.Tcmb0, cosmo.Ode0 = Neff, Tcmb0*kelvin, 0.
             assert close(cosmo.comoving_distance(z).to(Mpc).value, vals)
 
 
-class TestAnalyticLambdaCDM(BaseLambdaCDMTest):
-    flat_cosmo_cls = phytorch.cosmology.drivers.analytic.FlatLambdaCDM
-    cosmo_cls = phytorch.cosmology.drivers.analytic.LambdaCDM
-
-
-class TestAnalyticCDMR(BaseLambdaCDMRTest):
-    flat_cosmo_cls = phytorch.cosmology.drivers.analytic.FlatLambdaCDMR
-    cosmo_cls = phytorch.cosmology.drivers.analytic.LambdaCDMR
-
-
-class TestAnalyticDiffLambdaCDM(BaseLambdaCDMTest):
-    flat_cosmo_cls = phytorch.cosmology.drivers.analytic_diff.FlatLambdaCDM
-    cosmo_cls = phytorch.cosmology.drivers.analytic_diff.LambdaCDM
-
-
-class TestAnalyticDiffCDMR(BaseLambdaCDMRTest):
-    flat_cosmo_cls = phytorch.cosmology.drivers.analytic_diff.FlatLambdaCDMR
-    cosmo_cls = phytorch.cosmology.drivers.analytic_diff.LambdaCDMR
+# TODO: generate cosmology driver tests automatically
+for driver in (analytic, analytic_diff, odeint):
+    name = re.sub(r'(?:(?<=^).)|_.', lambda m: m.group(0)[-1].upper(), driver.__name__.rsplit('.', 1)[-1])
+    globals()[n] = type(n := f'Test{name}LambdaCDM', (BaseLambdaCDMTest,), dict(
+        flat_cosmo_cls=driver.FlatLambdaCDM,
+        cosmo_cls=driver.LambdaCDM
+    ))
+    globals()[n] = type(n := f'Test{name}LambdaCDMR', (BaseLambdaCDMRTest,), dict(
+        flat_cosmo_cls=driver.FlatLambdaCDMR,
+        cosmo_cls=driver.LambdaCDMR
+    ))
 
 
 # TODO: (age...) test_age

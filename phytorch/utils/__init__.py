@@ -1,12 +1,13 @@
 import ast
 import inspect
 import types
-from itertools import repeat
+from itertools import repeat, starmap
+from operator import mul
 from typing import Iterable
 
 import torch
 from more_itertools import last
-from torch import Tensor
+from torch import Size, Tensor
 
 
 class AutoUnpackable:
@@ -39,3 +40,7 @@ def _mid_many(a: Tensor, axes: Iterable[int]) -> Tensor:
         _a for _a in [a] for ax in axes
         for _a in [torch.narrow(_a, ax, 0, _a.shape[ax]-1) + torch.narrow(_a, ax, 1, _a.shape[ax]-1)]
     ) / 2**len(axes) if axes else a
+
+
+def ravel_multi_index(indices: Iterable[Tensor], shape: Size):
+    return sum(starmap(mul, zip(indices, [p for p in [1] for s in shape[:0:-1] for p in [s*p]][::-1] + [1])))
