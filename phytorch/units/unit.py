@@ -5,12 +5,14 @@ from itertools import chain
 from math import isclose
 from numbers import Number, Real
 from operator import add, mul, neg
-from typing import cast, Iterable, TYPE_CHECKING, Union
+from typing import cast, Iterable, TYPE_CHECKING, TypeVar, Union
 
 from typing_extensions import TypeAlias
 
 from .. import quantities
 from ..utils._typing import _bop, _fractionable, _mop, upcast
+from ..utils.interop import _astropy, AstropyConvertible, BaseToAstropy
+from ..utils.symmetry import product
 
 
 class Dimension(str):
@@ -21,7 +23,13 @@ dimensions = tuple(map(Dimension, ('L', 'T', 'M', 'I', 'Θ')))  # type: tuple[Di
 LENGTH, TIME, MASS, CURRENT, TEMPERATURE = dimensions
 
 
-class UnitBase(dict):
+_UnitBaseT = TypeVar('_UnitBaseT', bound='UnitBase')
+_UnitT = TypeVar('_UnitT', bound='Unit')
+_aPhysicalTypeT = TypeVar('_aPhysicalTypeT', bound=_astropy.units.PhysicalType)
+_aUnitBaseT = TypeVar('_aUnitBaseT', bound=_astropy.units.UnitBase)
+
+
+class UnitBase(AstropyConvertible[_UnitBaseT, _aPhysicalTypeT], dict):
     @classmethod
     def _make(cls, iterable: Iterable[tuple[Dimension, _fractionable]], **kwargs):
         return cls(((key, val) for key, val in iterable for val in [Fraction(val).limit_denominator()] if val != 0), **kwargs)
@@ -76,13 +84,26 @@ class UnitBase(dict):
     __rmod__ = __rtruediv__
 
 
+    class _toAstropy(BaseToAstropy[_UnitBaseT, _aPhysicalTypeT]):
+        _dimmap = {
+            LENGTH: _astropy.units.meter,
+            TIME: _astropy.units.second,
+            MASS: _astropy.units.kilogram,
+            CURRENT: _astropy.units.ampere,
+            TEMPERATURE: _astropy.units.Kelvin
+        }
+
+        def __call__(self):
+            return product(self._dimmap[dim]**pwr for dim, pwr in self._.items())
+
+
 class ValuedFloat(float):
     @property
     def value(self):
         return self
 
 
-class Unit(UnitBase):
+class Unit(UnitBase[_UnitT, _aUnitBaseT]):
     def __init__(self, *args, value: Real = Fraction(1), name=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.value = value
@@ -143,6 +164,11 @@ class Unit(UnitBase):
             filter(quantities.tensor_quantity.TensorQuantity.__subclasscheck__, types),
             quantities.tensor_quantity.TensorQuantity
         ).__torch_function__(func, types, args, kwargs)
+
+
+    class _toAstropy(UnitBase._toAstropy[_UnitT, _aUnitBaseT]):
+        def __call__(self):
+            return super().__call__() * self._.value
 
 
 _mul_other: TypeAlias = Union[Unit, Real, 'quantities.quantity.GenericQuantity']
