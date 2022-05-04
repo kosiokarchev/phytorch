@@ -1,12 +1,12 @@
 from functools import update_wrapper
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 import torch
 from torch import Tensor
 
 
 complex_typemap = {
-    torch.float16: torch.complex32,
+    # torch.float16: torch.complex32,
     torch.float32: torch.complex64,
     torch.float64: torch.complex128
 }
