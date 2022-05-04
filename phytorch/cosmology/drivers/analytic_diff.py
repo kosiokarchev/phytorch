@@ -2,7 +2,7 @@ from abc import ABC
 from itertools import chain
 from operator import neg
 
-from ._analytic import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDM, BaseAnalyticLambdaCDMR
+from ._analytic_base import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDM, BaseAnalyticLambdaCDMR
 from .. import special
 from ...special.elliptic_reduction.functional import elliptic_integral
 from ...utils._typing import _TN

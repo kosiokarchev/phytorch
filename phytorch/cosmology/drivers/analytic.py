@@ -5,7 +5,7 @@ from typing import Callable, ClassVar, Iterable
 
 from torch import Tensor
 
-from ._analytic import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDM, BaseAnalyticLambdaCDMR
+from ._analytic_base import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDM, BaseAnalyticLambdaCDMR
 from .. import special
 from ...special.elliptic import ellipeinc, ellipkinc, ellippiinc, elliprc, elliprf, elliprj
 from ...special.elliptic_reduction.symbolic import SymbolicEllipticReduction

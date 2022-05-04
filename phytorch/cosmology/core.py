@@ -1,26 +1,71 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from functools import partial, partialmethod
 from math import inf, pi
-from typing import ClassVar, Union
+from typing import Any, ClassVar, Generic, get_type_hints, Mapping, TYPE_CHECKING, TypeVar
 
+import forge
+import torch
+
+from .utils import _GQuantity, _no_value, AbstractParameter, Parameter, PropertyParameter
 from ..constants import c as speed_of_light, G as Newton_G
 from ..math import complexify, csinc, log10, realise, sinc
-from ..quantities.quantity import GenericQuantity
 from ..units.angular import steradian
 from ..units.astro import Mpc, pc
 from ..units.si import km, s
 from ..units.unit import Unit
-from ..utils._typing import _TN, ValueProtocol
-
-
-_GQuantity = Union[GenericQuantity, Unit, ValueProtocol]
+from ..utils._typing import _TN
+from ..utils.interop import _astropy, AstropyConvertible, BaseToAstropy
 
 
 H100 = 100 * km/s/Mpc
 
 
-class Cosmology(ABC):
+_CosmologyT = TypeVar('_CosmologyT', bound='Cosmology')
+_FLRWDriverT = TypeVar('_FLRWDriverT', bound='FLRWDriver')
+_FLRWT = TypeVar('_FLRWT', bound='FLRW')
+_acCosmologyT = TypeVar('_acCosmologyT', bound=_astropy.cosmology.Cosmology)
+
+
+class Cosmology(AstropyConvertible[_CosmologyT, _acCosmologyT], Generic[_CosmologyT, _acCosmologyT], ABC):
+    _parameter = object()
+    _parameters: Mapping[str, tuple[Any, AbstractParameter]]
+
+    def _set_params(self, **kwargs):
+        for key, val in kwargs.items():
+            if val is not _no_value:
+                setattr(self, key, val)
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        anns = get_type_hints(cls)
+
+        cls._parameters = {
+            key: (anns.get(key, Any), obj)
+            for key in dir(cls) for obj in [getattr(cls, key, forge.empty)]
+            if isinstance(obj, AbstractParameter)
+        }
+
+        cls.__init__ = forge.sign(forge.self, *(
+            forge.kwarg(name=name, type=ann, default=obj.default)
+            for name, (ann, obj) in cls._parameters.items()
+        ))(cls.__init__)
+
+    def __init__(self, **kwargs):
+        super().__init__()
+        for key, (ann, obj) in self._parameters.items():
+            if isinstance(obj, Parameter) and obj.default is not Parameter.default:
+                setattr(self, key, obj.default)
+        self._set_params(**kwargs)
+
+
+    @property
+    def parameters(self) -> Mapping[str, Any]:
+        return {key: getattr(self, key, None) for key, val in self._parameters.items()
+                if not isinstance(val, PropertyParameter)}
+
     @staticmethod
     def scale_factor(z):
         return 1 / (z+1)
@@ -30,8 +75,40 @@ class Cosmology(ABC):
         return z+1
 
 
-class FLRWDriver(Cosmology, ABC):
-    Ok0: _TN
+    class _toAstropy(BaseToAstropy[_CosmologyT, _acCosmologyT]):
+        _cls = _astropy.cosmology.Cosmology
+
+        def __call__(self):
+            return self._cls.from_format({
+                key: val.toAstropy() if isinstance(val, AstropyConvertible)
+                else val.numpy() if torch.is_tensor(val) else val
+                for key, val in self._.parameters.items()
+            }, cosmology=self._cls, move_to_meta=True, format='mapping')
+
+
+class FLRWDriver(Cosmology[_FLRWDriverT, _acCosmologyT], ABC):
+    def _redshift_power(self, z: _TN, O0_name: str, power: float) -> _TN:
+        return getattr(self, O0_name) * (z+1)**power / self.e2func(z)
+
+    _redshift_radiation = partial(_redshift_power, power=4)
+    _redshift_matter = partial(_redshift_power, power=3)
+    _redshift_curvature = partial(_redshift_power, power=2)
+
+    def _redshift_constant(self, z: _TN, O0_name: str) -> _TN:
+        return getattr(self, O0_name) / self.e2func(z)
+
+    class _redshift_method:
+        def __init__(self, _redshift_method):
+            self._redshift_method = _redshift_method
+
+        def __set_name__(self, owner: FLRWDriver, name):
+            setattr(owner, name, partialmethod(self._redshift_method, O0_name=f'{name}0'))
+
+        if TYPE_CHECKING:
+            def __call__(self, z: _TN) -> _TN: ...
+
+    Ok0: _TN = Parameter()
+    Ok = _redshift_method(_redshift_curvature)
 
     @property
     def sqrtOk0(self) -> _TN:
@@ -45,7 +122,10 @@ class FLRWDriver(Cosmology, ABC):
         return distance_dimless * realise(sinc(self.isqrtOk0_pi * distance_dimless))
 
     @abstractmethod
-    def e2func(self, z: _TN) -> _TN: ...
+    def _e2func(self, zp1: _TN) -> _TN: ...
+
+    def e2func(self, z: _TN, zp1: _TN = None) -> _TN:
+        return self._e2func(1+z if zp1 is None else zp1)
 
     def efunc(self, z: _TN) -> _TN:
         return self.e2func(z)**0.5
@@ -101,10 +181,10 @@ class FLRWDriver(Cosmology, ABC):
         return 8*pi*dc**3 * realise(csinc(2 * self.isqrtOk0_pi * dc, eps))
 
 
-class FLRW(FLRWDriver, ABC):
-    _critical_density_constant: ClassVar = 3 / (8 * pi * Newton_G)
+class FLRW(FLRWDriver[_FLRWT, _acCosmologyT], ABC):
+    _critical_density_constant: ClassVar[Unit] = 3 / (8 * pi * Newton_G)
 
-    H0: _GQuantity = H100
+    H0: _GQuantity = Parameter(H100)
 
     def H(self, z: _TN) -> _GQuantity:
         return self.H0 * self.efunc(z)
