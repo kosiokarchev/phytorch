@@ -11,8 +11,8 @@
 COMPLEX_TEMPLATE T polygamma_(unsigned long n, T z) {
     return
         pow(ltrl(-1), ltrl(n) + 1) * (
-            gamma<scalar_t>(T(n)) * pow(z+ltrl(g-h), -ltrl(n))
-            + gamma<scalar_t>(T(n+1)) * pow(z+ltrl(g-h), -ltrl(n)-1) * ltrl(g))
+            gamma<scalar_t>(T(n)) * pow(z+ltrl(polygamma_g - polygamma_h), -ltrl(n))
+            + gamma<scalar_t>(T(n+1)) * pow(z+ltrl(polygamma_g - polygamma_h), -ltrl(n) - 1) * ltrl(polygamma_g))
         + pow(ltrl(-1), ltrl(n)) * gamma<scalar_t>(T(n+1)) * (
             BOOST_PP_SEQ_FOR_EACH_I(POLYGAMMA_TERM, _, BOOST_PP_TUPLE_TO_SEQ(POLYGAMMA_COEFFS)));
 }
@@ -42,8 +42,7 @@ COMPLEX_TEMPLATE T polygamma(unsigned long n, T z) {
     if (n==0) return digamma<scalar_t>(z);
     if (z.real() < 0) {
         T cospiz = cos(ltrl(M_PI) * z), poly;
-#define HORNER_VAR cospiz
-#define a_case(r, data, i, elem) case (i): poly = HORNER(elem); break;
+#define a_case(r, data, i, elem) case (i): poly = HORNER(cospiz, elem); break;
         switch (n) {
             BOOST_PP_SEQ_FOR_EACH_I(a_case, _, BOOST_PP_TUPLE_TO_SEQ(POLYGAMMA_POLY_COEFFS))
             default:

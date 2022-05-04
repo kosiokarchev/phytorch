@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ATen/native/cpu/Loops.h>
+#include "ATen/native/cpu/Loops.h"
 
 template <typename func_t, int n, typename scalar_t>
 inline void cpu_kernel_multiple_outputs_impl(at::TensorIteratorBase& iter, func_t&& op) {

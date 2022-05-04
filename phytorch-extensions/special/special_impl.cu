@@ -17,6 +17,11 @@ void polygamma_impl(at::TensorIteratorBase& iter, const unsigned long& n) {
         else at::native::gpu_kernel(iter, [n]GPU_LAMBDA (T z) -> T {return polygamma<scalar_t>(n, z);});});
 }
 
+IMPLEMENT_REAL(gammainc, (a, x))
+IMPLEMENT_REAL(gammaincc, (a, x))
+IMPLEMENT_REAL(gammaincinv, (a, p))
+IMPLEMENT_REAL(gammainccinv, (a, q))
+
 IMPLEMENT_COMPLEX(hyp2f1, (a, b, c, z))
 
 IMPLEMENT_COMPLEX(deta1, (z))

@@ -2,19 +2,11 @@
 
 #include "moremath.h"
 
-#define ltrl(a) ((scalar_t) (a))
-
-#include <c10/util/complex.h> // NOLINT(modernize-deprecated-headers)
+#include "c10/util/complex.h" // NOLINT(modernize-deprecated-headers)
 template <typename scalar_t> using complex = c10::complex<scalar_t>;
 
-using std::numeric_limits;
-using std::min; using std::max; using std::round; using std::floor;
-using std::isfinite; using std::isnan; using std::isinf;
-using std::conj; using std::abs; using std::arg;
-using std::pow; using std::log2; using std::log; using std::sin; using std::cos; using std::tan;
+using std::conj; using std::arg; using std::abs;
 
-#define TINF numeric_limits<T>::infinity()
-#define TNAN numeric_limits<T>::quiet_NaN()
 #define TIMAG T(0, 1)
 
 template <typename T> __host__ __device__ T cnan() {
