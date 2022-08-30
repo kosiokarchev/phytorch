@@ -6,4 +6,4 @@
 
 #define lanczos_g 6.024680040776729583740234375
 
-REAL_TEMPLATE_H T igam_fac(const T& a, const T& x);
+DEFINE_REAL_FUNCTION_H(igam_fac, (a, x))

@@ -14,7 +14,7 @@ DEFINE_REAL_FUNCTION_H(gammaincc, (a, x))
 DEFINE_REAL_FUNCTION_H(gammaincinv, (a, p))
 DEFINE_REAL_FUNCTION_H(gammainccinv, (a, q))
 
-DEFINE_COMPLEX_FUNCTION_H(hyp2f1, (a, b, c, z))
+// DEFINE_COMPLEX_FUNCTION_H(hyp2f1, (a, b, c, z))
 
 DEFINE_COMPLEX_FUNCTION_H(deta1, (z))
 DEFINE_COMPLEX_FUNCTION_H(zeta, (z))

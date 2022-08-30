@@ -5,6 +5,9 @@
 
 #include "boost/preprocessor.hpp"
 
+#define stringify(a) #a
+#define STRINGIFY(a) stringify(a)
+
 #define PREPEND_data(r, data, i, elem) BOOST_PP_COMMA_IF(i) (data, elem)
 
 #define SIGNATURE_VARDECL(r, data, i, elem) BOOST_PP_COMMA_IF(i) BOOST_PP_TUPLE_ELEM(0, elem) BOOST_PP_TUPLE_ELEM(1, elem)
