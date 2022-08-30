@@ -318,9 +318,10 @@ class _dimspecs:
     inverse = pinverse = reciprocal = DimSpec(ret=lambda unit: ~unit)
 
     lu = eig = symeig = lobpcg = DimSpec(ret=('unit', False))
-    solve = triangular_solve = lstsq = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: (
+    triangular_solve = lstsq = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: (
         unit1 / unit2, unit2
     ))
+    linalg_solve = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: unit2 / unit1)
     lu_solve = DimSpec(('unit1', 'unit2', dimless), lambda unit1, unit2: unit1 / unit2)
     lu_unpack = DimSpec(('unit', dimless), (False, False, 'unit'))
 

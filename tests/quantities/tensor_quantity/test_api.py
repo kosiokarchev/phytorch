@@ -263,7 +263,8 @@ class TestCustom(TestQfuncsBase):
         self.test_lambda(func, transform, val_matrix, unit)
 
     @mark.parametrize('func', (
-        torch.solve, torch.lstsq,
+        update_wrapper(lambda B, A: torch.linalg.solve(A, B), torch.linalg.solve),
+        torch.lstsq,
         update_wrapper(lambda B, A: torch.lu_solve(B, *torch.lu(A)), torch.lu_solve),
         update_wrapper(lambda B, A: torch.cholesky_solve(B, torch.cholesky(A)), torch.cholesky_solve)
     ))
@@ -739,7 +740,8 @@ class TestSame(TestQfuncsBase):
         self._compare(func(val * unit, low * unit, high * unit), res * unit)
         self._compare(func(val * unit, low/2 * (2*unit), high*2 * (unit/2)), res * unit)
         self._compare(func(val * Unit(), low, high), res * Unit())
-        self._compare(func(val, low * Unit(), high), res)
+        self._compare(func(val, low * Unit(), high), res * Unit())
+        self._compare(func(val, low, high * Unit()), res * Unit())
 
         self._compare(func(val * unit, low * unit), func(val, low) * unit)
         self._compare(func(val * unit, None, low * unit), func(val, None, low) * unit)

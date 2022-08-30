@@ -2,6 +2,7 @@ import os
 import subprocess
 from pathlib import Path
 
+import torch
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, _is_cuda_file
 
@@ -18,7 +19,8 @@ class MyBuildExtension(BuildExtension):
                 cuda_linked_object = os.path.join(os.path.dirname(
                     cuda_objects[0]), ext.name+'_device_linked.o')
                 cuda_link = [
-                    'nvcc', '--device-link', '--forward-unknown-to-host-compiler', '-fPIC'
+                    'nvcc', '--device-link', '--forward-unknown-to-host-compiler', '-fPIC',
+                    '--gpu-architecture=sm_' + ''.join(map(str, torch.cuda.get_device_capability()))
                 ] + [f'-I{incl}' for incl in ext.include_dirs] + cuda_objects + ['-o', cuda_linked_object]
 
                 print('Linking device code')
@@ -41,8 +43,8 @@ setup(
         CUDAExtension(folder, [
             str(_) for _ in filter(lambda _: (_.suffix.lower() in ('.cpp', '.cu') and not _.name.startswith('_')), Path(folder).iterdir())
         ], extra_compile_args={
-            'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda', '--relocatable-device-code=true']
-        }, include_dirs=os.environ.get('INCLUDE', '').rstrip(':').split(':'))
+            'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda', '--relocatable-device-code=true', '--maxrregcount=128', '-std=c++17'],
+        }, include_dirs=list(filter(bool, os.environ.get('INCLUDE', '').split(':'))))
         for folder in (
             'elliptic', 'roots', 'special',
         )

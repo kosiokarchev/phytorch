@@ -11,7 +11,6 @@ inline void cpu_kernel_multiple_outputs_impl(at::TensorIteratorBase& iter, func_
                     std::forward<func_t>(op),
                     at::native::dereference<traits>(&data[n], &strides[n], k));
 
-            #pragma unroll
             for (auto i=0; i<n; ++i)
                 *reinterpret_cast<scalar_t *>(data[i] + strides[i]*k) = output[i];
         }

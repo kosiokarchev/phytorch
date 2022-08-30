@@ -120,7 +120,7 @@ template <int n> void roots_impl(at::TensorIteratorBase& iter) {
     TORCH_CHECK(iter.device(0).is_cpu() or iter.device(0).is_cuda(),
                 "\"roots4_kernel_cuda\" only implemented on CPU and cuda.")
 
-    AT_DISPATCH_FLOATING_TYPES(toValueType(iter.common_dtype()), "roots", [&] {
+    AT_DISPATCH_FLOATING_TYPES(toRealValueType(iter.common_dtype()), "roots", [&] {
         using T = complex<scalar_t>;
 
         // TODO: Why doesn't if constexpr work with more than one ROOTS_IMPl?!...

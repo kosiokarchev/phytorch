@@ -8,14 +8,11 @@
 
 #include "preprocessor.h"
 
-
-#define stringify(a) #a
-
 #define IMPLEMENT_VERBOSE(name, signature, varnames, return_type, _T)              \
 void name##_impl(at::TensorIteratorBase& iter) {                                   \
     TORCH_CHECK(iter.device(0).is_cpu() || iter.device(0).is_cuda(),               \
                 stringify(#name) " only implemented on CPU and cuda.")             \
-    AT_DISPATCH_FLOATING_TYPES(toValueType(iter.common_dtype()), #name, [&] {      \
+    AT_DISPATCH_FLOATING_TYPES(toRealValueType(iter.common_dtype()), #name, [&] {  \
         using T = _T;                                                              \
         if (iter.device_type(0) == c10::DeviceType::CPU)                           \
             at::native::cpu_kernel(iter, name<scalar_t, T>);                       \

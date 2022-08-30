@@ -12,7 +12,7 @@ auto implement(const std::function<void(at::TensorIteratorBase&)>& func, std::ar
     iterconfig.check_all_same_device(true);
     iterconfig.promote_inputs_to_common_dtype(true).promote_integer_inputs_to_float(true);
     iterconfig.add_owned_output(torch::Tensor());
-    #pragma unroll
+
     for (auto i=0; i<n; ++i) iterconfig.add_input(inputs[i]);
 
     auto iter = iterconfig.build();

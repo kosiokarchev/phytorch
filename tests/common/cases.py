@@ -6,6 +6,7 @@ import torch
 from pytest import mark
 from torch import Tensor
 
+from phytorch.utils import copy_func
 from tests.common.closeness import close_complex_nan
 
 
@@ -24,7 +25,7 @@ class BaseCasesTest:
             # TODO: pytest fails with "duplicate 'func'"
             #  if you run multiple files that have dtyped cases
             #  if BaseCasesTest.test_case is not copied?!?....
-            partial(BaseCasesTest.test_case)
+            copy_func(BaseCasesTest.test_case),
         )
 
     # noinspection PyMethodMayBeStatic

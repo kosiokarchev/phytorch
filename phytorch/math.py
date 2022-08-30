@@ -42,7 +42,13 @@ def _overload(torchfunc, cmathfunc):
 
 
 exp = _overload(torch.exp, cmath.exp)
+log = _overload(torch.log, cmath.log)
 log10 =_overload(torch.log10, cmath.log10)
 sin = _overload(torch.sin, cmath.sin)
-asinh = _overload(torch.asinh, cmath.asinh)
+cos = _overload(torch.cos, cmath.cos)
+asin = _overload(torch.asin, cmath.asin)
+acos = _overload(torch.acos, cmath.acos)
+sinh = _overload(torch.sinh, cmath.sinh)
 cosh = _overload(torch.cosh, cmath.cosh)
+asinh = _overload(torch.asinh, cmath.asinh)
+acosh = _overload(torch.acosh, cmath.acosh)

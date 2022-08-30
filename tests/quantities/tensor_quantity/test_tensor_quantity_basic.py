@@ -2,7 +2,7 @@ from typing import Iterable
 
 import torch
 from _pytest.python_api import raises
-from hypothesis import given
+from hypothesis import assume, given
 from torch import Tensor
 
 from phytorch.quantities.tensor_quantity import TensorQuantity
@@ -39,7 +39,7 @@ def test_init(value: _VT, unit: Unit):
 
 
 @given(n_broadcastable_random_tensors(2), units_strategy, units_strategy)
-def test_basic_arithmetic(values: Iterable[ConcreteQuantity], unit1: Unit, unit2: Unit):
+def test_basic_arithmetic(values: Iterable[Tensor], unit1: Unit, unit2: Unit):
     v1, v2 = values
     q1, q12, q2 = v1 * unit1, v2 * unit1, v2 * unit2
     assert_has_value_and_unit(q1 + q12, q1.value + q12.value, q1.unit)
@@ -65,3 +65,14 @@ def test_comparisons(q: Tensor):
         torch.allclose(q, qm)
     with raises(UnitError):
         torch.isclose(q, qm)
+
+
+@given(random_tensors, units_strategy, units_strategy)
+def test_conversion(value: Tensor, unit: Unit, unit2: Unit):
+    q = value * unit
+    assert_has_value_and_unit(q.to(unit), value, unit)
+    assert_has_value_and_unit(q.to(unit/2), 2*value, unit/2)
+
+    assume(unit.dimension != unit2.dimension)
+    with raises(TypeError):
+        q.to(unit2)
