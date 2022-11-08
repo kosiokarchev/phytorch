@@ -51,6 +51,10 @@ def partialparam(func: Callable, *args, **kwargs):
     return pytest.param(partial(func, *args, **kwargs), id=func.__name__)
 
 
+def postpartialparam(func: Callable, *args, **kwargs):
+    return pytest.param(postpartial(func, *args, **kwargs), id=func.__name__)
+
+
 def kwargsparam(func, **kwargs):
     return pytest.param((func, kwargs), id=func.__name__)
 
@@ -208,7 +212,7 @@ class TestCustom(TestQfuncsBase):
         self._compare(func(val * unit, val2 * unit2), res * unit)
         self._compare(func(val, val2 * unit2), res)
 
-    @mark.parametrize('func', (torch.ldexp, torch.xlogy))
+    @mark.parametrize('func', (torch.ldexp, torch.xlogy, torch.special.xlogy, torch.special.xlog1py))
     def test_unit_dimless_unit(self, func, val, val2, unit):
         res = func(val, val2)
         self._compare(func(val * unit, val2), res * unit)
@@ -264,8 +268,10 @@ class TestCustom(TestQfuncsBase):
 
     @mark.parametrize('func', (
         update_wrapper(lambda B, A: torch.linalg.solve(A, B), torch.linalg.solve),
-        torch.lstsq,
+        # TODO: better test linalg_lstsq?
+        update_wrapper(lambda B, A: torch.linalg.lstsq(A, B)[0], torch.linalg.lstsq),
         update_wrapper(lambda B, A: torch.lu_solve(B, *torch.lu(A)), torch.lu_solve),
+        update_wrapper(lambda B, A: torch.linalg.lu_solve(*torch.lu(A), B), torch.linalg.lu_solve),
         update_wrapper(lambda B, A: torch.cholesky_solve(B, torch.cholesky(A)), torch.cholesky_solve)
     ))
     def test_solve(self, func: Callable, val_matrix, val2_matrix, unit, unit2):
@@ -302,12 +308,13 @@ class TestCustom(TestQfuncsBase):
 
     @mark.parametrize('transform, func', (*map(partial(_tfparam, i=1), (
         *((lambda res, unit: (res[0] * unit, res[1]), f)
-          for f in (torch.lu, torch.eig, torch.symeig)),
+          for f in (torch.lu, torch.linalg.lu_factor, torch.linalg.eig, torch.symeig)),
         (lambda res, unit: (res[:2] + (res[2] * unit,)),
          update_wrapper(lambda A: torch.lu_unpack(*torch.lu(A)), torch.lu_unpack)),
         (lambda res, unit: (res[0], res[1] * unit),
          torch.qr),
-        (lambda res, unit: (res[0], res[1] * unit, res[2]), torch.svd)
+        *((lambda res, unit: (res[0], res[1] * unit, res[2]), f)
+          for f in (torch.svd, torch.linalg.svd))
     )), *(
         pytest.param(lambda res, unit: (res[0], res[1] * unit, res[2]), (f, dict(assert_values=False)), id=f.__name__)
         for f in (torch.svd_lowrank, torch.pca_lowrank)
@@ -584,7 +591,7 @@ class TestNoUnit(TestQfuncsBase):
             func, kwargs = func
         self._tree_compare(func(q), func(q.value), **kwargs)
 
-    @mark.parametrize('func', (torch.matrix_rank,))
+    @mark.parametrize('func', (torch.linalg.matrix_rank,))
     def test_nounit_matrix(self, func, q_matrix: ConcreteQuantity):
         self.test_nounit(func, q_matrix)
 
@@ -623,14 +630,37 @@ class TestTransEtAl(TestQfuncsBase):
     @mark.parametrize('func', (
         torch.exp, torch.exp2, torch.expm1,
         torch.log, torch.log2, torch.log10, torch.log1p,
-        partialparam(torch.logsumexp, dim=-1), partialparam(torch.logcumsumexp, dim=-1),
-        partialparam(torch.polygamma, 2), partialparam(torch.mvlgamma, p=1),
+        partialparam(torch.logsumexp, dim=-1),
+        partialparam(torch.special.logsumexp, dim=-1),
+        partialparam(torch.logcumsumexp, dim=-1),
+        partialparam(torch.polygamma, 2), partialparam(torch.special.polygamma, 2),
+        partialparam(torch.mvlgamma, p=1), partialparam(torch.special.multigammaln, p=1),
         torch.lgamma, torch.digamma,
-        torch.erf, torch.erfc, torch.erfinv, torch.logit, torch.sigmoid, torch.i0,
+        torch.erf, torch.erfc, torch.erfinv, torch.logit, torch.special.logit, torch.sigmoid, torch.i0,
         torch.sinh, torch.asinh, torch.arcsinh, torch.cosh, torch.tanh, torch.atanh, torch.arctanh,
         deterministic(torch.bernoulli),
-        *(postpartial(f, -1) for f in (torch.softmax, torch.log_softmax)),
-        torch.floor, torch.ceil, torch.round, torch.fix, torch.trunc, torch.frac
+        *(postpartial(f, -1) for f in (torch.softmax, torch.special.softmax, torch.log_softmax, torch.special.log_softmax)),
+        torch.floor, torch.ceil, torch.round, torch.special.round, torch.fix, torch.trunc, torch.frac,
+        torch.special.airy_ai,
+        torch.special.bessel_j0, torch.special.bessel_j1, torch.special.bessel_y0, torch.special.bessel_y1, torch.special.modified_bessel_i0,
+        torch.special.modified_bessel_i1, torch.special.modified_bessel_k0, torch.special.modified_bessel_k1,
+        torch.special.scaled_modified_bessel_k0, torch.special.scaled_modified_bessel_k1, torch.special.spherical_bessel_j0,
+        *postpartials((
+            torch.special.chebyshev_polynomial_t, torch.special.chebyshev_polynomial_u,
+            torch.special.chebyshev_polynomial_v,
+            torch.special.chebyshev_polynomial_w, torch.special.shifted_chebyshev_polynomial_t,
+            torch.special.shifted_chebyshev_polynomial_u,
+            torch.special.shifted_chebyshev_polynomial_v, torch.special.shifted_chebyshev_polynomial_w,
+            torch.special.hermite_polynomial_h, torch.special.hermite_polynomial_he,
+            torch.special.laguerre_polynomial_l, torch.special.legendre_polynomial_p,
+        ), 5),
+        torch.special.gammaln, torch.special.digamma, torch.special.psi,
+        torch.special.entr,
+        torch.special.erf, torch.special.erfc, torch.special.erfcx, torch.special.erfinv,
+        torch.special.exp2, torch.special.expit, torch.special.expm1,
+        torch.special.i0, torch.special.i0e, torch.special.i1, torch.special.i1e, torch.special.log1p, torch.special.log_ndtr,
+        torch.special.ndtr, torch.special.ndtri,
+        torch.special.sinc
     ))
     def test_trans(self, func, val: _VT, unit: Unit):
         with raises(UnitError):
@@ -649,7 +679,8 @@ class TestTransEtAl(TestQfuncsBase):
 
     @mark.parametrize('func', (
         torch.logaddexp, torch.logaddexp2,
-        torch.igamma, torch.igammac
+        torch.igamma, torch.igammac, torch.special.gammainc, torch.special.gammaincc,
+        torch.special.zeta
     ))
     def test_trans_twoargs(self, func, val: _VT, val2: _VT, unit: Unit, unit2):
         for vs in ((val, val2*unit), (val*unit, val2), (val*unit, val2*unit), (val*unit, val * unit2)):
@@ -662,7 +693,7 @@ class TestTransEtAl(TestQfuncsBase):
                                   (val * Unit(), val2 * Unit()),
                                   (val, val2/2 * (2*Unit())))):
             assert not isinstance(res, GenericQuantity)
-            assert res.allclose(truth)
+            assert res.allclose(truth, equal_nan=True)
 
     def test_atan2(self, val: _VT, val2: _VT, unit: Unit, unit2):
         func = torch.atan2
@@ -754,7 +785,7 @@ class TestSame(TestQfuncsBase):
 
     @mark.parametrize('func', (
         update_wrapper(lambda args: torch.block_diag(*(a.flatten(end_dim=-2) for a in args)), torch.block_diag),
-        torch.cat, torch.concat,
+        torch.cat, torch.concat, torch.concatenate,
         torch.stack, torch.hstack, torch.dstack, torch.vstack, torch.row_stack, torch.column_stack,
         update_wrapper(lambda args: torch.cartesian_prod(*(a.flatten()[:10] for a in args)), torch.cartesian_prod),
     ))

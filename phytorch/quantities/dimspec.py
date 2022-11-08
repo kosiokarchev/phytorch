@@ -253,7 +253,7 @@ class _dimspecs:
     pow = matrix_power = float_power = PowerDimSpec()
     __rpow__ = PowerDimSpec(flipped=True)
 
-    (block_diag, cat, concat,
+    (block_diag, cat, concat, concatenate,
      stack, hstack, dstack, vstack, row_stack, column_stack,
      cartesian_prod,
      # atleast(*args) -> *map(atleast, args), in __torch__function__
@@ -272,19 +272,33 @@ class _dimspecs:
     asin = arcsin = acos = arccos = atan = arctan = trans_to_radian
 
     (exp, exp2, expm1, matrix_exp,
-     log, log2, log10, log1p, logsumexp, logcumsumexp,
-     lgamma, digamma, mvlgamma,
-     erf, erfc, erfinv, logit, sigmoid, i0,
+     log, log2, log10, log1p, logsumexp, special_logsumexp, logcumsumexp,
+     lgamma, digamma, mvlgamma, special_multigammaln,
+     erf, erfc, erfinv, logit, special_logit, sigmoid, i0,
      sinh, asinh, arcsinh, cosh, acosh, arccosh, tanh, atanh, arctanh,
-     bernoulli, logdet, slogdet, softmax, log_softmax,
-     ceil, floor, round, fix, trunc, frac
+     bernoulli, logdet, slogdet, softmax, special_softmax, log_softmax, special_log_softmax,
+     ceil, floor, round, special_round, fix, trunc, frac,
+     special_airy_ai,
+     special_bessel_j0, special_bessel_j1, special_bessel_y0, special_bessel_y1, special_modified_bessel_i0, special_modified_bessel_i1, special_modified_bessel_k0, special_modified_bessel_k1, special_scaled_modified_bessel_k0, special_scaled_modified_bessel_k1, special_spherical_bessel_j0,
+     special_chebyshev_polynomial_t, special_chebyshev_polynomial_u, special_chebyshev_polynomial_v, special_chebyshev_polynomial_w, special_shifted_chebyshev_polynomial_t, special_shifted_chebyshev_polynomial_u, special_shifted_chebyshev_polynomial_v, special_shifted_chebyshev_polynomial_w,
+     special_hermite_polynomial_h, special_hermite_polynomial_he,
+     special_laguerre_polynomial_l, special_legendre_polynomial_p,
+     special_gammaln, special_digamma, special_psi,
+     special_entr,
+     special_erf, special_erfc, special_erfcx, special_erfinv,
+     special_exp2, special_expit, special_expm1,
+     special_i0, special_i0e, special_i1, special_i1e, special_log1p, special_log_ndtr,
+     special_ndtr, special_ndtri,
+     special_sinc
      ) = trans
-    polygamma = DimSpecDispatcher(i=0, specs=(
+    polygamma = special_polygamma = DimSpecDispatcher(i=0, specs=(
         (int, DimSpec((None, dimless), trans.ret)),
         (object, trans)
     ))
 
-    logaddexp = logaddexp2 = igamma = igammac = DimSpec((dimless, dimless), False)
+    (logaddexp, logaddexp2, igamma, igammac,
+     special_gammainc, special_gammaincc, special_zeta,
+     ) = DimSpec((dimless, dimless), False)
 
     det = DetDimSpec()
 
@@ -305,7 +319,7 @@ class _dimspecs:
     index_copy = index_fill = scatter = scatter_add = DimSpec(('unit', None, None, 'unit'), 'unit')
     index_add = DimSpec(('unit', None, None, 'unit', dimless), 'unit')
 
-    ldexp = xlogy = prelu = DimSpec(('unit', dimless), 'unit')
+    ldexp = xlogy = special_xlogy = special_xlog1py = prelu = DimSpec(('unit', dimless), 'unit')
     lerp = DimSpec(('unit', 'unit', dimless), 'unit')
     # heaviside: can't assure func(..., val/2 * (2*unit)) == func(..., val)
     heaviside = DimSpec((None, dimless), False)
@@ -317,12 +331,14 @@ class _dimspecs:
 
     inverse = pinverse = reciprocal = DimSpec(ret=lambda unit: ~unit)
 
-    lu = eig = symeig = lobpcg = DimSpec(ret=('unit', False))
+    lu = linalg_lu_factor = eig = linalg_eig = symeig = lobpcg = DimSpec(ret=('unit', False))
     triangular_solve = lstsq = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: (
         unit1 / unit2, unit2
     ))
     linalg_solve = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: unit2 / unit1)
+    linalg_lstsq = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: (unit2 / unit1, unit2**2, False, unit1))
     lu_solve = DimSpec(('unit1', 'unit2', dimless), lambda unit1, unit2: unit1 / unit2)
+    linalg_lu_solve = DimSpec(('unit2', dimless, 'unit1'), lambda unit1, unit2: unit1 / unit2)
     lu_unpack = DimSpec(('unit', dimless), (False, False, 'unit'))
 
     cholesky = sqrt
@@ -330,7 +346,7 @@ class _dimspecs:
     cholesky_solve = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: unit1 * unit2 ** Fraction(-2))
 
     qr = DimSpec(ret=(False, 'unit'))
-    svd = pca_lowrank = DimSpec(ret=(False, 'unit', False))
+    svd = linalg_svd = pca_lowrank = DimSpec(ret=(False, 'unit', False))
     svd_lowrank = DimSpec(('unit', None, None, 'unit'), (False, 'unit', False))
 
 
