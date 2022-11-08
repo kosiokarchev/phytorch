@@ -7,7 +7,7 @@ from torch import Tensor
 
 from ._analytic_base import BaseAnalyticFLRWDriver, BaseAnalyticLambdaCDM, BaseAnalyticLambdaCDMR
 from .. import special
-from ...special.elliptic import ellipeinc, ellipkinc, ellippiinc, elliprc, elliprf, elliprj
+from ...special.elliptic import ellipeinc, ellipkinc, ellippiinc, elliprc, elliprd, elliprf, elliprj
 from ...special.elliptic_reduction.symbolic import SymbolicEllipticReduction
 from ...utils._typing import _TN
 
@@ -121,8 +121,27 @@ class LambdaCDM(AnalyticFLRWDriver, BaseAnalyticLambdaCDM):
             + z**2 / 3 * elliprj(u1, u2, u3, p)
         )
 
+    def _ellipr_absorption_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
+        dz = z2 - z1
+
+        (r1, r2, r3), (d11, d12, d13, d21, d22, d23), (u1, u2, u3) = self._get_ellipr_params(z1, z2)
+        dijdik = (r2-r1)*(r3-r1)
+
+        return (2/3) * dz * self._fix_dimless(
+            (d21*d22*d23 - d11*d12*d13) / dz
+            + (3 * (r1+1)**2 - dijdik) * elliprf(u1, u2, u3)
+            + 2 * (r1+r2+r3 + 3) * (
+                dz**2 / 3 * dijdik * elliprd(u2, u3, u1)
+                + d11 * d21 / u1**0.5
+            )
+        )
+
+    def _ellipr_absorption_distance_dimless(self, z: _TN) -> _TN:
+        return self._ellipr_absorption_distance_dimless_z1z2(0, z)
+
     comoving_distance_dimless_z1z2 = _ellipr_comoving_distance_dimless_z1z2
     lookback_time_dimless = _ellipr_lookback_time_dimless
+    absorption_distance_dimless = _ellipr_absorption_distance_dimless
 
 
 class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
@@ -151,10 +170,10 @@ class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
         return 2 * self._fix_dimless(racbd**0.5 / (a+1)/(b+1) * (f(c2) - f(c1)))
 
     def _get_ellipr_params(self, z1, z2):
-        rts = tuple(self._epoly_roots)
+        rts = tuple(self._epoly_roots)[::-1]
         d11, d12, d13, d14, d21, d22, d23, d24 = (
             (z - r)**0.5
-            for z in (z1, z2) for r in self._epoly_roots
+            for z in (z1, z2) for r in rts
         )
         return rts, (d11, d12, d13, d14, d21, d22, d23, d24), (
             (d11*d12*d23*d24 + d21*d22*d13*d14)**2,
@@ -171,17 +190,68 @@ class LambdaCDMR(AnalyticFLRWDriver, BaseAnalyticLambdaCDMR):
         return 2 * z * self._fix_dimless((
             elliprf(u1, u2, u3)
             + z**2 / 3 * (r2-r1) * (r3-r1) * (r4-r1) / (r1+1) * elliprj(u1, u2, u3, p)
-            - elliprc((d12 * d13 * d14 / d11 * (z + 1) + d22 * d23 * d24 / d21)**2, (z + 1) / d11**2 / d21**2 * p)
+            - elliprc((d12*d13*d14/d11 * (z+1) + d22*d23*d24/d21)**2, (z+1) / d11**2 / d21**2 * p)
         ) / (r1+1))
+
+    def _ellipr_absorption_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
+        dz = z2-z1
+        dz2 = dz**2
+        dz23 = dz2 / 3
+
+        (r1, r2, r3, r4), (d11, d12, d13, d14, d21, d22, d23, d24), (u1, u2, u3) = self._get_ellipr_params(z1, z2)
+        p = u1 - dz2 * (r3-r1)*(r4-r1)
+        q = p / (z1-r1) / (z2-r1)
+
+        # A = (d21*d22*d23/d24 - d11*d12*d13/d14)
+        # cRf = (2*(r1+1)**2 - (r2-r1)*(r3-r1))
+        # Rf = elliprf(u1, u2, u3)
+        # cRd = dz23 * (r2-r1)*(r3-r1)
+        # Rd = elliprd(u1, u2, u3)
+        # _1 = d21*d11/d24/d14 / u3**0.5
+        # Rc = elliprc(q + dz2, q)
+        # cRj = dz23 * (r2-r1)*(r3-r1) * (r4-r1)
+        # Rj = elliprj(u1, u2, u3, p)
+        #
+        # # print(u1, u2, u3, p)
+        # # print(f'{A}/dz + {cRf} * {Rf} + ... * ({cRd}  * {Rd} + {_1}) + ... * ({Rc} - {cRj} * {Rj})')
+        #
+        # return dz * self._fix_dimless(
+        #     A / dz
+        #     + cRf * Rf
+        #     + (r4-r2)*(r4-r3) * (
+        #         cRd * Rd
+        #         + _1
+        #     )
+        #     + (r1+r2+r3+r4 + 4) * (
+        #         Rc
+        #         - cRj * Rj
+        #     )
+        # )
+
+        return dz * self._fix_dimless(
+            (d21*d22*d23/d24 - d11*d12*d13/d14) / dz
+            + (2*(r1+1)**2 - (r2-r1)*(r3-r1)) * elliprf(u1, u2, u3)
+            + (r4-r2)*(r4-r3) * (
+                (dz23 * (r2-r1)*(r3-r1)) * elliprd(u1, u2, u3)
+                + d21*d11/d24/d14 / u3**0.5
+            )
+            + (r1+r2+r3+r4 + 4) * (
+                elliprc(q + dz2, q)
+                - (dz23 * (r2-r1)*(r3-r1) * (r4-r1)) * elliprj(u1, u2, u3, p)
+            )
+        )
+
+    def _ellipr_absorption_distance_dimless(self, z: _TN) -> _TN:
+        return self._ellipr_absorption_distance_dimless_z1z2(0, z)
+
 
     comoving_distance_dimless_z1z2 = _ellipr_comoving_distance_dimless_z1z2
     lookback_time_dimless = _ellipr_lookback_time_dimless
+    absorption_distance_dimless = _ellipr_absorption_distance_dimless
 
 
 class FlatLambdaCDM(special.FlatLambdaCDM, LambdaCDM):
-    pass
-    # TODO: hyp2f1: doesn't seem necessary
-    # def comoving_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
+    # def hyp_comoving_distance_dimless_z1z2(self, z1: _TN, z2: _TN) -> _TN:
     #     # hyttps://www.wolframalpha.com/input/?i=integrate+1+%2F+sqrt%28a*x%5E3+%2B+%281-a%29%29
     #     r = self.Om0 / (self.Om0-1)
     #     zp11, zp12 = 1+z1, 1+z2
@@ -189,6 +259,7 @@ class FlatLambdaCDM(special.FlatLambdaCDM, LambdaCDM):
     #         zp12 * hyp2f1(1/3, 1/2, 4/3, zp12**3 * r)
     #         - zp11 * hyp2f1(1/3, 1/2, 4/3, zp11**3 * r)
     #     )).real
+    pass
 
 
 class FlatLambdaCDMR(special.FlatLambdaCDMR, LambdaCDMR):
