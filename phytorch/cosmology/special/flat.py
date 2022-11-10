@@ -57,7 +57,6 @@ class _FlatLambdaCDMR(FlatFLRWMixin, concrete.LambdaCDMR, ABC):
     # def age_dimless(self, z: _t) -> _t: ...
 
 
-
 # TODO: lazify flat classes?
 globals().update(_clss := {
     name: type(name, (FlatFLRWMixin, obj, ABC), _clsdicts.get(obj, {}))

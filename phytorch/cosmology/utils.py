@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Any, TypeAlias, Union
 
 import forge
 
@@ -11,7 +11,7 @@ from phytorch.units.unit import Unit
 from phytorch.utils._typing import ValueProtocol
 
 
-_GQuantity = Union[GenericQuantity, Unit, ValueProtocol]
+_GQuantity: TypeAlias = Union[GenericQuantity, Unit, ValueProtocol]
 
 
 class _no_value_enum(enum.Enum):
