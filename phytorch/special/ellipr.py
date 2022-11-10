@@ -187,8 +187,8 @@ class Elliprj(CimplMixin, CargsMixin):
         )
 
 
-elliprc = Elliprc.apply
-elliprd = Elliprd.apply
-elliprf = Elliprf.apply
-elliprg = Elliprg.apply
-elliprj = Elliprj.apply
+elliprc = Elliprc.application()
+elliprd = Elliprd.application()
+elliprf = Elliprf.application()
+elliprg = Elliprg.application()
+elliprj = Elliprj.application()

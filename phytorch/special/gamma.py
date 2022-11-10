@@ -61,15 +61,16 @@ class Digamma(CargsMixin):
     gradfuncs = grad_z,
 
 
-# noinspection PyUnusedLocal,PyMethodOverriding
 class Polygamma(CargsMixin):
     save_output = False
 
+    # noinspection PyMethodOverriding
     @staticmethod
     def saved_tensors(ctx, n, z):
         ctx.n = n
         return z,
 
+    # noinspection PyMethodOverriding
     @staticmethod
     def _forward(ctx, z, n, *args):
         return _special.polygamma(n, z)
@@ -82,9 +83,9 @@ class Polygamma(CargsMixin):
     gradfuncs = (None, grad_z)
 
 
-gamma = Gamma.apply
-loggamma = Loggamma.apply
-digamma = psi = Digamma.apply
+gamma = Gamma.application()
+loggamma = Loggamma.application()
+digamma = psi = Digamma.application()
 
 
 def polygamma(n: int, z: _TN) -> Tensor:

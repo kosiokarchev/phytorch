@@ -1,5 +1,6 @@
+from functools import partial
 from inspect import getattr_static
-from typing import Any, Callable, ClassVar, Iterable, Optional, Sequence, Union
+from typing import Any, Callable, ClassVar, Iterable, Optional, Sequence, Type, Union
 
 import torch
 from more_itertools import always_iterable, padded
@@ -102,9 +103,32 @@ class TorchFunction(torch.autograd.Function):
                for fname in ('backward', '_backward')):
             cls.differentiable = True
 
+    @classmethod
+    def application(cls, name=None):
+        def _application(*args, **kwargs):
+            return cls.apply(*args, **kwargs)
+        _application.__name__ = name or cls.__name__.lower()
+        return _application
+
+
+class TensorArgsMixin(TorchFunction):
+    @classmethod
+    def apply(cls, *args):
+        return super().apply(*map(torch.as_tensor, args))
+
+
+class CargsMixin(TorchFunction):
+    @classmethod
+    def process_grad(cls, grad: Tensor) -> Tensor:
+        return grad.conj() if is_complex(grad) else grad
+
+    @classmethod
+    def apply(cls, *args):
+        return super().apply(*as_complex_tensors(*args))
+
 
 class CimplMixin(TorchFunction):
-    _impl_func: Callable[[Tensor, ...], Union[Tensor, tuple[Tensor, ...]]]
+    _impl_func: ClassVar[Callable[[Tensor, ...], Union[Tensor, tuple[Tensor, ...]]]]
 
     @classmethod
     @wrap_torch_function(lambda cls, *args: tuple(filter(torch.is_tensor, args)))
@@ -143,11 +167,28 @@ class AlternativeForwardMixin(TorchFunction):
                 'must specify ".ninputs"!')
 
 
-class CargsMixin(TorchFunction):
-    @classmethod
-    def process_grad(cls, grad: Tensor) -> Tensor:
-        return grad.conj() if is_complex(grad) else grad
+class InverseMixin(TorchFunction):
+    _forward_cls: ClassVar[Type[TorchFunction]]
+    _forward_cls_grad_inv_var: ClassVar[Callable]
+    _inv_var_index: int
 
     @classmethod
-    def apply(cls, *args):
-        return super().apply(*as_complex_tensors(*args))
+    def _reorder_params_for_forward(cls, *args):
+        return *args[:cls._inv_var_index], args[-1], *args[cls._inv_var_index+1:len(args)-1], args[cls._inv_var_index]
+
+    @classmethod
+    def _grad(cls, forward_cls_grad, ctx, *args):
+        return (
+            ctx.grad_inv_var if forward_cls_grad is cls._forward_cls_grad_inv_var
+            else - forward_cls_grad(ctx, *cls._reorder_params_for_forward(*args)) * ctx.grad_inv_var
+        )
+
+    def __init_subclass__(cls, **kwargs):
+        cls._inv_var_index = cls._forward_cls.gradfuncs.index(cls._forward_cls_grad_inv_var)
+        cls.gradfuncs = *map(partial(partial, cls._grad), cls._forward_cls.gradfuncs),
+        super().__init_subclass__(**kwargs)
+
+    @classmethod
+    def _backward(cls, ctx):
+        ctx.grad_inv_var = 1 / cls._forward_cls_grad_inv_var(ctx, *cls._reorder_params_for_forward(*ctx.saved_tensors))
+        return super()._backward(ctx)

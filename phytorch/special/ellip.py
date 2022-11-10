@@ -170,10 +170,10 @@ class EllipPiinc(BaseEllipinc, CargsMixin):
         cls.gradfuncs[:0] = (cls.gradfuncs.pop(-1),)
 
 
-ellipk = EllipK.apply
-ellipe = EllipE.apply
-ellipd = EllipD.apply
-ellippi = EllipPi.apply
+ellipk = EllipK.application()
+ellipe = EllipE.application()
+ellipd = EllipD.application()
+ellippi = EllipPi.application()
 
 
 @with_complex_args
