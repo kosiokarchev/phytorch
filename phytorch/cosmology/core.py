@@ -25,7 +25,7 @@ H100 = 100 * km/s/Mpc
 _CosmologyT = TypeVar('_CosmologyT', bound='Cosmology')
 _FLRWDriverT = TypeVar('_FLRWDriverT', bound='FLRWDriver')
 _FLRWT = TypeVar('_FLRWT', bound='FLRW')
-_acCosmologyT = TypeVar('_acCosmologyT', bound=_astropy.cosmology.Cosmology)
+_acCosmologyT = TypeVar('_acCosmologyT', bound=_astropy.Cosmology)
 
 
 class Cosmology(AstropyConvertible[_CosmologyT, _acCosmologyT], Generic[_CosmologyT, _acCosmologyT], ABC):

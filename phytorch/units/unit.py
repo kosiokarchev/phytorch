@@ -25,8 +25,8 @@ LENGTH, TIME, MASS, CURRENT, TEMPERATURE = dimensions
 
 _UnitBaseT = TypeVar('_UnitBaseT', bound='UnitBase')
 _UnitT = TypeVar('_UnitT', bound='Unit')
-_aPhysicalTypeT = TypeVar('_aPhysicalTypeT', bound=_astropy.units.PhysicalType)
-_aUnitBaseT = TypeVar('_aUnitBaseT', bound=_astropy.units.UnitBase)
+_aPhysicalTypeT = TypeVar('_aPhysicalTypeT', bound=_astropy.PhysicalType)
+_aUnitBaseT = TypeVar('_aUnitBaseT', bound=_astropy.UnitBase)
 
 
 class UnitBase(AstropyConvertible[_UnitBaseT, _aPhysicalTypeT], dict):
