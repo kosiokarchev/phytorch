@@ -31,5 +31,4 @@ class LambdaCDM(BaseDECDM[_LambdaCDMT, _astropy.cosmology.LambdaCDM], ABC):
 
 
 class LambdaCDMR(RadiationFLRWMixin, LambdaCDM[_LambdaCDMRT], ABC):
-    def _e2func(self, zp1: _TN) -> _TN:
-        return zp1**2 * ((self.Or0 * zp1 + self.Om0) * zp1 + self.Ok0) + self.Ode0
+    """`LambdaCDM` with radiation."""

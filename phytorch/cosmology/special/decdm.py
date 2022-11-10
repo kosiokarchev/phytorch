@@ -87,3 +87,6 @@ class RadiationFLRWMixin(BaseDECDM, ABC):
     @property
     def _sum0_noDE(self) -> _TN:
         return super()._sum0_noDE + self.Or0
+
+    def _e2func(self, zp1: _TN) -> _TN:
+        return super()._e2func(zp1) + self.Or0 * zp1**4
