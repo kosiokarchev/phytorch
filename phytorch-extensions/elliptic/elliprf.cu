@@ -21,5 +21,15 @@ DEFINE_COMPLEX_FUNCTION(elliprf, (x, y, z)) {
             E2 = X*Y - Z*Z,
             E3 = X*Y*Z;
 
-    return (ltrl(1.) - E2 / ltrl(10.) + E2 * E2 / ltrl(14.) + E3 / ltrl(24.) - ltrl(3. / 44.) * E2 * E3) / sqrt(Am);
+    return (
+        ltrl(1.)
+        - E2 / ltrl(10.)
+        + E2*E2 / ltrl(24.)
+        + E3 / ltrl(14.)
+        - E2*E3 * ltrl(3. / 44.)
+        // extra terms:
+        // - E2*E2*E2 * ltrl(5. / 208.)
+        // + E3*E3 * ltrl(3. / 104.)
+        // + E2*E2*E3 / ltrl(16.)
+    ) / sqrt(Am);
 }

@@ -78,7 +78,10 @@ DEF_ROOTS(4)(T b, T c, T d, T e) {
         (-3*b*b*b*b + 256*e - 64*b*d + 16*b*b*c) / 256
     );
 
-    return {r4d[0] - b/4, r4d[1] - b/4, r4d[2] - b/4, r4d[3] - b/4};
+    std::array<T, 4> ret = {r4d[0] - b/4, r4d[1] - b/4, r4d[2] - b/4, r4d[3] - b/4};
+    std::sort(ret.begin(), ret.end(), [] (const T& _a, const T& _b) {return abs(_a) < abs(_b);});
+
+    return ret;
 
     // auto twop = (ltrl(8)*c - ltrl(3)*b*b) / ltrl(4),
     //      q = (b*b*b - ltrl(4)*b*c + ltrl(8)*d) / ltrl(8),

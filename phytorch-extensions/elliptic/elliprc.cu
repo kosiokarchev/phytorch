@@ -7,7 +7,29 @@ DEFINE_COMPLEX_FUNCTION(elliprc, (x, y)) {
     if (not x) return ltrl(M_PI_2) / sqrt(y);
 
     // principal value
-    if (not y.imag() and y.real() < 0) return sqrt(x / (x-y)) * elliprc<scalar_t>(x-y, -y);
+    if (not y.imag() and y.real() < 0)
+        return sqrt(x / (x-y)) * elliprc<scalar_t>(x-y, -y);
+
+    auto Am = (x + y + y) / ltrl(3), xm = x, ym = y, A0 = Am;
+    auto Q = pow(3*EPS, -1./6.) * abs(A0 - x);
+    scalar_t pow4 = 1.;
+
+    while (pow4 * Q > abs(Am)) {
+        auto lm = 2*sqrt(xm)*sqrt(ym) + ym;
+        xm = (xm + lm) / ltrl(4); ym = (ym + lm) / ltrl(4);
+        Am = (Am + lm) / ltrl(4); pow4 /= 4.;
+    }
+
+    auto s = (y - A0) * pow4 / Am;
+    return (
+        1
+        + s*s * ltrl(3./10.)
+        + s*s*s / ltrl(7)
+        + s*s*s*s * ltrl(3./8.)
+        + s*s*s*s*s * ltrl(9./22.)
+        + s*s*s*s*s*s * ltrl(159./208.)
+        + s*s*s*s*s*s*s * ltrl(9./8.)
+    ) / sqrt(Am);
 
     // TODO: handle x=y in elliprc better
     if (abs(sqrt(1-x/y)) < max((scalar_t) 1e-3, 100*sqrt(numeric_limits<scalar_t>::epsilon())))
@@ -15,7 +37,7 @@ DEFINE_COMPLEX_FUNCTION(elliprc, (x, y)) {
 
     // Formally, have to T(1), but this error most times "cancels" with wrong
     // continuity of acos...
-    // return acos(sqrt(x) / sqrt(y)) / (sqrt(1-x/y) * sqrt(y));
+    return acos(sqrt(x) / sqrt(y)) / (sqrt(1-x/y) * sqrt(y));
 
     auto v = sqrt(x) / sqrt(y), _1vv = T(1) - v*v, s1vv = sqrt(_1vv), lv = v*TIMAG + s1vv;
     auto ac = ltrl(M_PI_2) + TIMAG*log(lv);

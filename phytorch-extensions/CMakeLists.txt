@@ -25,6 +25,9 @@ link_libraries(${TORCH_LIBRARIES})
 
 
 add_library(cephes SHARED cephes/cgamma.c cephes/hyp2f1.c)
+file(GLOB SCIPY_ELLINT_SRCs _scipy/ellint_carlson_cpp_lite/*.hh)
+add_library(_scipy INTERFACE ${SCIPY_ELLINT_SRCs})
+
 add_library(
     common INTERFACE
     common/Loops.h
