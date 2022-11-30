@@ -25,6 +25,10 @@ class AbstractBatchedInterpolator(ABC):
         self.batch_shape = torch.broadcast_shapes(*(g[:-1] for g in grid_shapes), values_shape[:-self.ndim - channel_ndim])
         self.batch_ndim = len(self.batch_shape)
 
+    @staticmethod
+    def interp_input(*args: Tensor):
+        return torch.stack(torch.broadcast_tensors(*map(torch.as_tensor, args)), -1)
+
     def _unsqueeeze_channels(self, *tensors, pos=-4) -> Union[Tensor, Iterable[Tensor]]:
         res = ((t.unsqueeze(pos).unflatten(pos, (1,) * self.channel_ndim) for t in tensors)
                if self.channel_ndim else tensors)
@@ -37,10 +41,3 @@ class AbstractBatchedInterpolator(ABC):
 
     @abstractmethod
     def __call__(self, x: Tensor) -> Tensor: ...
-
-
-# TODO: remove AbstractNDInterpolator
-# class AbstractNDInterpolator(AbstractBatchedInterpolator):
-#     @staticmethod
-#     def interp_input(*args: Tensor):
-#         return torch.stack(torch.broadcast_tensors(*map(torch.as_tensor, args)), -1)

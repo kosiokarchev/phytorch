@@ -3,7 +3,7 @@ import inspect
 import types
 from itertools import repeat, starmap
 from operator import mul
-from typing import Iterable
+from typing import Iterable, Sequence
 
 import torch
 from more_itertools import last
@@ -44,3 +44,10 @@ def _mid_many(a: Tensor, axes: Iterable[int]) -> Tensor:
 
 def ravel_multi_index(indices: Iterable[Tensor], shape: Size):
     return sum(starmap(mul, zip(indices, [p for p in [1] for s in shape[:0:-1] for p in [s*p]][::-1] + [1])))
+
+
+def polyval(p: Sequence[Tensor], x: Tensor) -> Tensor:
+    result = 0
+    for _p in p:
+        result = _p + x * result
+    return result
