@@ -127,6 +127,22 @@ class CargsMixin(TorchFunction):
         return super().apply(*as_complex_tensors(*args))
 
 
+class TensorArgsMixin(TorchFunction):
+    @classmethod
+    def apply(cls, *args):
+        return super().apply(*map(torch.as_tensor, args))
+
+
+class CargsMixin(TorchFunction):
+    @classmethod
+    def process_grad(cls, grad: Tensor) -> Tensor:
+        return grad.conj() if is_complex(grad) else grad
+
+    @classmethod
+    def apply(cls, *args):
+        return super().apply(*as_complex_tensors(*args))
+
+
 class CimplMixin(TorchFunction):
     _impl_func: ClassVar[Callable[[Tensor, ...], Union[Tensor, tuple[Tensor, ...]]]]
 

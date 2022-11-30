@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_COMPILER /opt/cuda/bin/nvcc)
 
 project(phytorch LANGUAGES C CXX CUDA)
@@ -44,15 +44,14 @@ add_library(roots SHARED roots/roots.cpp roots/roots_impl.cu)
 add_library(
     special SHARED
     special/special.cuh special/special.cpp special/special_impl.cu
-        special/gammahead.h
-        special/gamma.cu
-        special/loggamma.cu
-        special/digamma.cu
-        special/polygamma.cu
-        special/gammainc.cu
-        special/gammaincinv.cu
-    special/hyper.cu
-    special/zeta.cu
+        special/gammahead.cuh
+            special/gamma.cu special/loggamma.cu special/digamma.cu special/polygamma.cu
+            special/gammainc.cu special/gammaincinv.cu
+        special/hyper.h special/hyper.cuh
+            special/hyper.cu special/hyper_impl.cu
+        special/meijerg.cuh
+            special/meijerg.cu special/meijerg_impl.cu
+        special/zeta.cu
 )
 
 

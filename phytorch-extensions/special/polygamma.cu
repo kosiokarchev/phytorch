@@ -1,5 +1,5 @@
 #include "special.cuh"
-#include "gammahead.h"
+#include "gammahead.cuh"
 
 #define POLYGAMMA_COEFFS ( \
     -13.000011048992318, -11.999911510243422, -11.000331481556389, -9.999215716230553, -9.00134490373618,               \

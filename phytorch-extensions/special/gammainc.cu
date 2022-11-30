@@ -1,5 +1,5 @@
 #include "special.cuh"
-#include "gammahead.h"
+#include "gammahead.cuh"
 
 /*                                                     igam.c
  *
@@ -202,7 +202,7 @@ REAL_TEMPLATE T lanczos_sum_expg_scaled(const T& x) {
     ));
 }
 
-REAL_TEMPLATE T igam_fac(const T& a, const T& x) {
+DEFINE_REAL_FUNCTION(igam_fac, (a, x)) {
     /* Compute
      *
      * x^a * exp(-x) / gamma(a)

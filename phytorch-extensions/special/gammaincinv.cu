@@ -1,5 +1,5 @@
 #include "special.cuh"
-#include "gammahead.h"
+#include "gammahead.cuh"
 
 /*
  * (C) Copyright John Maddock 2006.

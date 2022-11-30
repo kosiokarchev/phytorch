@@ -1,131 +1,154 @@
-#include "special.cuh"
-
-#define GAMMA(a) gamma<scalar_t>((a))
-#define LGAMMA(a) lgamma((a).real())
+#include "hyper.cuh"
 
 
-template <typename scalar_t> __host__ __device__ scalar_t mag2(scalar_t a) {return log2(abs(a));}
-template <typename scalar_t> __host__ __device__ scalar_t mag2(complex<scalar_t> a) {return log2(abs(a));}
-
-
-COMPLEX_TEMPLATE T hyp2f1_gosper(const T& a, const T& b, const T& c, const T& z) {
-    T f1;
-
-    printf("hyp2f1_gosper!\n");
-
-    auto abz = a * b * z,
-         nz = ltrl(1) - z,
-         g = z / nz,
-         abg = a * b * g,
-         z2 = z - ltrl(2),
-         ch = c / ltrl(2),
-         c1h = (c + ltrl(1)) / ltrl(2),
-         cba = c - b - a;
-    auto tol = mag2(numeric_limits<T>::epsilon()) - 10;
-
-    scalar_t maxprec=1000, extra = 10;
-    while (true) {
-        auto maxmag = -numeric_limits<scalar_t>::infinity();
-        T d = ltrl(0), e = ltrl(1), f = ltrl(0);
-        for (scalar_t k = 0; true; ++k) { // NOLINT(cert-flp30-c)
-            auto kch = k + ch;
-            auto kakbz = (k + a) * (k + b) * z / (ltrl(4) * (k + ltrl(1)) * kch * (k + c1h)),
-                    d1 = kakbz * (e - (k + cba) * d * g),
-                    e1 = kakbz * (d * abg + (k + c) * e),
-                    ft = d * (k * (cba * z + k * z2 - c) - abz) / (2 * kch * nz);
-            f1 = f + e - ft;
-            maxmag = max(maxmag, mag2(f1));
-            if (mag2(f1 - f) < tol) break;
-
-            d = d1, e = e1, f = f1;
-        }
-        auto cancellation = maxmag - mag2(f1);
-        if (cancellation < extra) break;
-        else {
-            extra += cancellation;
-            if (extra > maxprec) return cnan<scalar_t>();
-        }
-    }
-
-    return f1;
+COMPLEX_TEMPLATE
+auto nint_distance(T x) {
+    scalar_t n = round(x.real());
+    return std::make_tuple((int) n, x != n ? log2(abs(x-n)) : -TINF);
 }
 
 
-template <int p, int q, typename scalar_t, typename T=complex<scalar_t>> __host__ __device__
-T hypsum(const std::array<T, p+q>& coeffs, const T& z) {
-    T s = 1., t = 1.;
-    unsigned int k = 0;
-    while (true) {
-        for (auto i=0; i<p; ++i) t *= coeffs[i] + k;
-        for (auto i=p; i<p+q; ++i) t /= coeffs[i] + k;
-        k += 1; t /= k; t *= z; s += t;
-        if (abs(t) < numeric_limits<scalar_t>::epsilon())
-            return s;
-        if (k > 6000) {
-            printf("did not converge in 6000 terms...\n");
-            return cnan<scalar_t>();
-        }
+COMPLEX_TEMPLATE T hypsum(const vector<T>& a_s, const vector<T>& b_s, T z, HYP_KWARGS_MAXTERMS) {
+    std::ostringstream oss;
+
+    T s = 1, t = 1;
+    for (auto k=0; k<maxterms; ++k){
+        for (const auto& a: a_s) t *= (a+k);
+        for (const auto& b: b_s) t /= (b+k);
+        t /= k+1; t *= z; s += t;
+        if (abs(t) < TEPS) return s;
     }
+    return TNAN;
+    // throw no_convergence(maxterms);
 }
 
-#define PERTURBATION (min(pow(numeric_limits<T>::epsilon(), 0.5), 1e-3))
-#define hyp2f1_zerodiv(a, b, c) ( \
-    is_nonpositive_int(c) and not ( \
-        (is_nonpositive_int(a) and (c).real() <= (a).real()) or \
-        (is_nonpositive_int(b) and (c).real() <= (b).real())))
 
-DEFINE_COMPLEX_FUNCTION(hyp2f1, (a, b, c, z)) {
-    if (z == ltrl(1)) {
-        return (((c-a-b).real() > 0 or is_nonpositive_int(a) or is_nonpositive_int(b)) and not hyp2f1_zerodiv(a, b, c))
-        // TODO: gammaprod
-        ? gamma<scalar_t>(c) * gamma<scalar_t>(c-a-b) / gamma<scalar_t>(c-a) / gamma<scalar_t>(c-b)
-        : numeric_limits<T>::infinity();
+COMPLEX_TEMPLATE T hyper(const vector<T>& a_s, const vector<T>& b_s, T z, HYP_KWARGS) {
+    auto p = a_s.size(), q = b_s.size();
+
+    // TODO: Reduce degree by eliminating common parameters
+
+    // if (p == 0) {
+    //     if (q == 0) return exp(z);
+    //     if (q == 1) return hyp0f1<scalar_t>(b_s[0], z, force_series, maxterms);
+    // } if (p == 1) {
+    //     if (q == 0) return hyp1f0<scalar_t>(a_s[0], z, force_series, maxterms);
+    //     if (q == 1) return hyp1f1<scalar_t>(a_s[0], b_s[0], z, force_series, maxterms);
+    //     if (q == 2) return hyp1f2<scalar_t>(a_s[0], b_s[0], b_s[1], z, force_series, maxterms);
+    // }  if (p == 2) {
+    //     if (q == 0) return hyp2f0<scalar_t>(a_s[0], a_s[1], z, force_series, maxterms);
+    //     if (q == 1) return hyp2f1_<scalar_t>(a_s[0], a_s[1], b_s[0], z, force_series, maxterms);
+    //     if (q == 2) return hyp2f2<scalar_t>(a_s[0], a_s[1], b_s[0], b_s[1], z, force_series, maxterms);
+    //     if (q == 3) return hyp2f3<scalar_t>(a_s[0], a_s[1], b_s[0], b_s[1], b_s[2], z, force_series, maxterms);
+    // }
+    // if (p == q+1) return hypq1fq(p, q, a_s, b_s, z);
+    // if (p > q+1 and not force_series) return hyp_borel(p, q, a_s, b_s, z);
+
+    return hypsum<scalar_t>(a_s, b_s, z, maxterms);
+}
+
+
+COMPLEX_TEMPLATE auto hyp0f1_series(T b, T z) {
+    auto jw = sqrt(-z) * T(0, 1);
+    auto u = 1 / (4 * jw);
+    auto c = ltrl(0.5) - b;
+    auto E = exp(2 * jw);
+    return series_return_t<T>{
+        {{-jw, E}, {c, -1}, {}, {}, {b-ltrl(0.5), ltrl(1.5)-b}, {}, -u},
+        {{jw, E}, {c, 1}, {}, {}, {b-ltrl(0.5), ltrl(1.5)-b}, {}, u}
+    };
+}
+
+INSTANTIATE_COMPLEX_TEMPLATE_NOARGS(hyp0f1, float)(complex<float>, complex<float>, HYP_KWARGS_TYPES);
+INSTANTIATE_COMPLEX_TEMPLATE_NOARGS(hyp0f1, double)(complex<double>, complex<double>, HYP_KWARGS_TYPES);
+COMPLEX_TEMPLATE T hyp0f1(T b, T z, HYP_KWARGS) {
+    if (abs(z) > 128 and not force_series) {
+        // try {
+            return ltrl(R2SQRTPI) * gamma<scalar_t>(b) * hypercomb<scalar_t>(
+                (series_t<T>) ([b, z] (vector<T>) {return hyp0f1_series<scalar_t>(b, z);}),
+                vector<T>{}, true, maxterms);
+        // } catch (no_convergence& exc) { if (force_series) throw exc; }
     }
-    if (z == ltrl(0)) return (c != ltrl(0) || a == ltrl(0) || b == ltrl(0)) ? ltrl(1)+z : cnan<T>();
+    return hypsum<scalar_t>(vector<T>{}, vector<T>{b}, z, maxterms);
+}
 
-    if (hyp2f1_zerodiv(a, b, c))
-        return numeric_limits<scalar_t>::infinity();
 
-    if (abs(z) <= 0.8
-        or (is_real_nonpositive(a) and is_int(a) and -1000 <= a.real() <= 0)
-        or (is_real_nonpositive(b) and is_int(b) and -1000 <= b.real() <= 0))
-        return hypsum<2, 1, scalar_t>(std::array<T, 3>{{a, b, c}}, z);
-    if (abs(z) >= 1.3) {  // https://dlmf.nist.gov/15.8.E2
-        for (auto i=0; i<10; ++i) {
-            auto res = ltrl(M_PI) / sin(ltrl(M_PI) * (b-a)) * (
-                // exp(LGAMMA(c) - LGAMMA(b) - LGAMMA(c-a) - LGAMMA(a-b+1))
-                GAMMA(c) / GAMMA(b) / GAMMA(c-a) / GAMMA(a-b+1)
-                    * pow(-z, -a) * hyp2f1<scalar_t>(a, a-c+1, a-b+1, ltrl(1)/z)
-                // - exp(LGAMMA(c) - LGAMMA(a) - LGAMMA(c-b) - LGAMMA(b-a+1))
-                - GAMMA(c) / GAMMA(a) / GAMMA(c-b) / GAMMA(b-a+1)
-                    * pow(-z, -b) * hyp2f1<scalar_t>(b, b-c+1, b-a+1, ltrl(1)/z)
-            );
-            if (isfinite(res)) return res;
-            a += pow(10, i) * PERTURBATION;
-            b += 1.2 * pow(10, i) * PERTURBATION;
+COMPLEX_TEMPLATE T hyp1f0(T a, T z, HYP_KWARGS) { return pow(1-z, -a); }
+
+
+COMPLEX_TEMPLATE
+auto hypercomb_check_need_perturb(const series_return_t<T>& terms) {
+    auto perturb = false;
+    vector<size_t> discard;
+
+    for (auto term_index=0; term_index<terms.size(); ++term_index) {
+        auto& [w_s, c_s, alpha_s, beta_s, a_s, b_s, z] = terms[term_index];
+        auto have_singular_nongamma_weight = false;
+
+        // Avoid division by zero in leading factors
+        // TODO: near divisions by zero
+        for (auto w=w_s.begin(), c=c_s.begin(); w < w_s.end(); ++w, ++c)
+            if (abs(*w) < 2*TEPS and (*c).real() <= 0 and (*c) != ltrl(0)) {
+                perturb = have_singular_nongamma_weight = true;
+                break;
+            }
+
+        // Check for gamma and series poles and near-poles
+        size_t pole_count[]{0, 0, 0};
+        for (auto data_index=0; data_index < 3; ++data_index) {
+            auto& data = data_index == 0 ? alpha_s : data_index == 1 ? beta_s : b_s;
+            for (auto x=data.begin(); x < data.end(); ++x) {
+                auto [n, d] = nint_distance<scalar_t>(*x);
+                if (n > 0) continue;
+                if (d == -TINF) {
+                    // OK if we have a polynomial
+                    auto ok = false;
+                    if (data_index == 2)
+                        for (const auto& u: a_s)
+                            if (u and u.real() > n) {ok = true; break;}
+                    if (ok) continue;
+                    ++pole_count[data_index];
+                }
+            }
         }
-        printf("possible gamma overflow...\n");
-        return cnan<T>();
+        if (pole_count[1] > pole_count[0] + pole_count[2] and not have_singular_nongamma_weight)
+            discard.push_back(term_index);
+        else if (pole_count[0] or pole_count[1] or pole_count[2])
+            perturb = true;
     }
-    if (abs(ltrl(1)-z) <= 0.75) { // https://dlmf.nist.gov/15.8.E4
-        for (auto i=0; i<10; ++i) {
-            auto res = ltrl(M_PI) / sin(ltrl(M_PI) * (c-a-b)) * (
-                // exp(LGAMMA(c) - LGAMMA(c-a) - LGAMMA(c-b) - LGAMMA(a+b-c+1))
-                GAMMA(c) / GAMMA(c-a) / GAMMA(c-b) / GAMMA(a+b-c+1)
-                    * hyp2f1<scalar_t>(a, b, a+b-c+1, 1-z)
-                // - exp(LGAMMA(c) - LGAMMA(a) - LGAMMA(b) - LGAMMA(c-a-b+1))
-                - GAMMA(c) / GAMMA(a) / GAMMA(b) / GAMMA(c-a-b+1)
-                    * pow(1-z, c-a-b) * hyp2f1<scalar_t>(c-a, c-b, c-a-b+1, 1-z)
-            );
-            if (isfinite(res)) return res;
-            a += pow(10, i) * PERTURBATION;
-            b += 1.2 * pow(10, i) * PERTURBATION;
+
+    return std::make_tuple(perturb, discard);
+}
+
+
+INSTANTIATE_COMPLEX_TEMPLATE_NOARGS(hypercomb, float)(series_t<complex<float>>, const vector<complex<float>>&, HYP_KWARGS);
+INSTANTIATE_COMPLEX_TEMPLATE_NOARGS(hypercomb, double)(series_t<complex<double>>, const vector<complex<double>>&, HYP_KWARGS);
+COMPLEX_TEMPLATE T hypercomb(series_t<T> function, const vector<T>& params, HYP_KWARGS) {
+    auto terms = function(params);
+    auto [perturb, discard] = hypercomb_check_need_perturb<scalar_t>(terms);
+
+    if (perturb) {
+        vector<T> params_(params.size());
+        scalar_t h = pow(ltrl(2), -(floor(ltrl(0.3) * TPREC)));
+
+        for (auto k=0; k<params.size(); ++k) {
+            params_[k] = params[k] + h;
+            // Heuristically ensure that the perturbations are "independent" so that two perturbations
+            // don't accidentally cancel each other out in a subtraction.
+            h += h / (k+1);
         }
-        printf("possible gamma overflow...\n");
-        return cnan<T>();
+        terms = function(params_);
     }
-    if (abs(z/(z-ltrl(1))) <= 0.75) {  // https://dlmf.nist.gov/15.8.E1
-        return hyp2f1<scalar_t>(a, c-b, c, z/(z-ltrl(1))) / pow(ltrl(1)-z, a);
-    }
-    return hyp2f1_gosper<scalar_t>(a, b, c, z);
+
+    T ret = 0;
+    for (size_t i=0; i < terms.size(); ++i)
+        if (find(discard.begin(), discard.end(), i) == discard.end()) {
+            auto [w_s, c_s, alpha_s, beta_s, a_s, b_s, z] = terms[i];
+            auto v = hyper<scalar_t>(a_s, b_s, z, force_series, maxterms);
+            for (const auto& a: alpha_s) v *= gamma<scalar_t>(a);
+            for (const auto& b: beta_s)  v /= gamma<scalar_t>(b);
+            for (auto w=w_s.begin(), c=c_s.begin(); w<w_s.end(); ++w, ++c) v *= pow(*w, *c);
+            ret += v;
+        }
+    return ret;
 }

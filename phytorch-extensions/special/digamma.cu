@@ -1,5 +1,5 @@
 #include "special.cuh"
-#include "gammahead.h"
+#include "gammahead.cuh"
 
 DEFINE_COMPLEX_FUNCTION(digamma, (z)) {
     if (is_int(z) and is_real_nonpositive(z)) return cnan<T>();

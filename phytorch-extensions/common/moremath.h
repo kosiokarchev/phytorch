@@ -6,6 +6,7 @@
 
 #define LOGPI 1.14472988584940017414
 #define SQRT2PI 2.50662827463100050242
+#define R2SQRTPI 0.15915494309189535  // 1 / (2 * sqrt(pi))
 #define LOGSQRT2PI 0.91893853320467274178
 #define EULER 0.577215664901532860606512090082402431
 
@@ -22,3 +23,4 @@ using std::sin; using std::cos; using std::tan;
 #define TINF numeric_limits<T>::infinity()
 #define TNAN numeric_limits<T>::quiet_NaN()
 #define TEPS numeric_limits<scalar_t>::epsilon()
+#define TPREC numeric_limits<scalar_t>::digits
