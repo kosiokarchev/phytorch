@@ -5,8 +5,8 @@ import torch
 from frozendict import frozendict
 from torch import Tensor
 
-from .meta import Meta
-from .quantities.torchquantity import TorchQuantity
+from ..meta import Meta
+from ..quantities.tensor_quantity import TensorQuantity
 
 
 class RaggedTensorMeta(type(Meta), type(Tensor)):
@@ -42,12 +42,12 @@ class RaggedTensor(Meta, Tensor, metaclass=RaggedTensorMeta):
         return self.new_zeros(self.reduced_shape).scatter_add_(-1, self.reduce_indices, self)
 
 
-class RaggedQuantityMeta(type(TorchQuantity), type(RaggedTensor)):
+class RaggedQuantityMeta(type(TensorQuantity), type(RaggedTensor)):
     pass
 
 
-class RaggedQuantity(TorchQuantity, RaggedTensor, metaclass=RaggedQuantityMeta):
+class RaggedQuantity(TensorQuantity, RaggedTensor, metaclass=RaggedQuantityMeta):
     def __new__(cls, arg, *args, sizes, unit=None, **kwargs):
-        if isinstance(arg, TorchQuantity) and unit is None:
+        if isinstance(arg, TensorQuantity) and unit is None:
             unit = arg.unit
         return super().__new__(cls, arg, *args, sizes=sizes, unit=unit, **kwargs)
