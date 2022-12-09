@@ -26,7 +26,7 @@ class BaseAnalyticFLRWDriver(FLRWDriver, ABC):
         """Normalised coefficients of $P(z+1)$."""
         return (c/self._epoly_leading for c in self._epoly_coeffs_)
 
-    _roots_force_numeric = False
+    _roots_force_numeric = True
 
     @property
     def _epoly_roots(self) -> Iterable[_TN]:

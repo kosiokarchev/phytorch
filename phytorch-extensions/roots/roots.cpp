@@ -11,7 +11,6 @@ auto torch_roots(const std::array<torch::Tensor, n>& inputs) {
     at::TensorIteratorConfig iterconfig;
     iterconfig.check_all_same_device(true);
     iterconfig.promote_inputs_to_common_dtype(true).promote_integer_inputs_to_float(true);
-    #pragma unroll
     for (auto i=0; i<n; ++i) iterconfig.add_owned_output(torch::Tensor());
     for (auto i=0; i<n; ++i) iterconfig.add_input(inputs[i]);
 
@@ -19,7 +18,6 @@ auto torch_roots(const std::array<torch::Tensor, n>& inputs) {
     roots_impl<n>(iter);
 
     std::array<torch::Tensor, n> ret;
-    #pragma unroll
     for (auto i=0; i<n; ++i) ret[i] = iter.output(i);
     return array_to_tuple(ret, std::make_index_sequence<n>{});
 }

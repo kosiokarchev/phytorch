@@ -20,6 +20,6 @@ inline void cpu_kernel_multiple_outputs_impl(at::TensorIteratorBase& iter, func_
 template <typename func_t> void cpu_kernel_multiple_outputs(at::TensorIteratorBase& iter, func_t&& op) {
     using traits = function_traits<func_t>;
     cpu_kernel_multiple_outputs_impl<
-            func_t, std::tuple_size<typename traits::result_type>::value, typename traits::result_type::value_type
+        func_t, std::tuple_size<typename traits::result_type>::value, typename traits::result_type::value_type
     >(iter, std::forward<func_t>(op));
 }
