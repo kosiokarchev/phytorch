@@ -1,0 +1,11 @@
+.wrapped pre {
+    white-space: pre-wrap;
+}
+
+.strike {
+    text-decoration: line-through;
+}
+
+.underline {
+    text-decoration: underline;
+}

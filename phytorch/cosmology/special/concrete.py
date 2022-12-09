@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from numbers import Number
-from typing import ClassVar, TypeVar
+from typing import TypeVar
 
 from .decdm import BaseDECDM, RadiationFLRWMixin
 from ..core import _acCosmologyT, FLRW
@@ -42,6 +41,15 @@ class BasewCDM(BaseDECDM[_BasewCDMT, _acCosmologyT], ABC):
 
 
 class wCDM(BasewCDM[_wCDMT, _acwCDMT], ABC):
+    r"""Cosmology with a dark energy with constant equation of state:
+
+    .. math::
+       w(z) = w_0 = \mathrm{const}.
+
+    See Also
+    --------
+    :py:class:`astropy.cosmology.wCDM`"""
+
     w0: _TN = Parameter(-1.)
 
     def _w(self, zp1: _TN) -> _TN:
@@ -56,10 +64,18 @@ class wCDM(BasewCDM[_wCDMT, _acwCDMT], ABC):
 
 
 class wCDMR(RadiationFLRWMixin, wCDM, ABC):
-    pass
+    """`wCDM` with radiation."""
 
 
 class LambdaCDM(wCDM[_LambdaCDMT, _astropy.cosmology.LambdaCDM], ABC):
+    """Dark energy from a cosmological constant :math:`\Lambda`, implying an equation of state
+
+    .. math::
+       w(z) = w_0 = -1.
+
+    See Also
+    --------
+    :py:class:`astropy.cosmology.LambdaCDM`"""
     w0 = -1
 
     Ode = FLRW._redshift_method(BaseDECDM._redshift_constant)
@@ -75,10 +91,18 @@ class LambdaCDM(wCDM[_LambdaCDMT, _astropy.cosmology.LambdaCDM], ABC):
 
 
 class LambdaCDMR(RadiationFLRWMixin, LambdaCDM, ABC):
-    pass
+    """`LambdaCDM` with radiation."""
 
 
 class w0waCDM(wCDM[_w0waCDMT, _acw0waCDMT], ABC):
+    r"""Cosmology with a dark energy evolving linearly with scale factor:
+
+    .. math::
+       w(z) = w_0 + w_a (1-a) = w_0 + w_a \left(1 - \frac{1}{z+1}\right).
+
+    See Also
+    --------
+    :py:class:`astropy.cosmology.w0waCDM`"""
     wa: _TN = Parameter(0.)
 
     def _w(self, zp1: _TN) -> _TN:
@@ -93,10 +117,18 @@ class w0waCDM(wCDM[_w0waCDMT, _acw0waCDMT], ABC):
 
 
 class w0waCDMR(RadiationFLRWMixin, w0waCDM, ABC):
-    pass
+    """`w0waCDM` with radiation."""
 
 
 class wpwaCDM(w0waCDM[_wpwaCDMT, _acwpwaCDMT], ABC):
+    r"""Cosmology with a pivoting dark energy equation of state:
+
+    .. math::
+       w(z) = w_p + w_a (a_p-a) = w_p + w_a \left(\frac{1}{z_p+1} - \frac{1}{z+1}\right).
+
+    See Also
+    --------
+    :py:class:`astropy.cosmology.wpwaCDM`"""
     @PropertyParameter
     def wp(self):
         return self.w0
@@ -123,10 +155,18 @@ class wpwaCDM(w0waCDM[_wpwaCDMT, _acwpwaCDMT], ABC):
 
 
 class wpwaCDMR(RadiationFLRWMixin, wpwaCDM, ABC):
-    pass
+    """`wpwaCDM` with radiation."""
 
 
 class w0wzCDM(wCDM[_w0wzCDMT, _acw0wzCDMT], ABC):
+    r"""Cosmology with a dark energy evolving linearly with redshift:
+
+    .. math::
+       w(z) = w_0 + w_z z.
+
+    See Also
+    --------
+    :py:class:`astropy.cosmology.w0wzCDM`"""
     wz: _TN = Parameter(0.)
 
     def _w(self, zp1: _TN) -> _TN:
@@ -141,4 +181,4 @@ class w0wzCDM(wCDM[_w0wzCDMT, _acw0wzCDMT], ABC):
 
 
 class w0wzCDMR(RadiationFLRWMixin, w0wzCDM, ABC):
-    pass
+    """`w0wzCDM` with radiation."""
