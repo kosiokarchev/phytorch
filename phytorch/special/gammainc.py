@@ -78,10 +78,10 @@ class Gammainccinv(CimplMixin, TensorArgsMixin, InverseMixin):
     _forward_cls_grad_inv_var = Gammaincc.grad_z
 
 
-gammainc = Gammainc.apply
-gammaincc = Gammaincc.apply
-gammaincinv = Gammaincinv.apply
-gammainccinv = Gammainccinv.apply
+gammainc = Gammainc.application()
+gammaincc = Gammaincc.application()
+gammaincinv = Gammaincinv.application()
+gammainccinv = Gammainccinv.application()
 
 
 # __all__ = 'gammainc', 'gammaincc', 'gammaincinv', 'gammainccinv', 'Tgamma'
