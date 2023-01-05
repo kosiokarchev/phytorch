@@ -2,6 +2,11 @@ from typing import Callable
 
 from .unit import Unit
 
+quecto_: Callable[[Unit], Unit]
+q_: Callable[[Unit], Unit]
+
+ronto_: Callable[[Unit], Unit]
+r_: Callable[[Unit], Unit]
 
 yocto_: Callable[[Unit], Unit]
 y_: Callable[[Unit], Unit]
@@ -64,3 +69,8 @@ Z_: Callable[[Unit], Unit]
 yotta_: Callable[[Unit], Unit]
 Y_: Callable[[Unit], Unit]
 
+ronna_: Callable[[Unit], Unit]
+R_: Callable[[Unit], Unit]
+
+quetta_: Callable[[Unit], Unit]
+Q_: Callable[[Unit], Unit]

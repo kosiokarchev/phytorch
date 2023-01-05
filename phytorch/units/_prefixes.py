@@ -11,12 +11,12 @@ from .unit import Unit
 
 _prefix_map = {
     names_and_abbrevs(prefix): expon
-    for eseq in [(*range(1, 4), *range(6, 25, 3))]
+    for eseq in [(*range(1, 4), *range(6, 31, 3))]
     for prefix, expon in zip(
-        ('yocto', 'zepto', 'atto', 'femto', 'pico', 'nano',
+        ('quecto', 'ronto', 'yocto', 'zepto', 'atto', 'femto', 'pico', 'nano',
          ('micro', ('u', 'μ')), 'milli', 'centi', 'deci',
          ('deca', 'da'), 'hecto', 'kilo', 'Mega', 'Giga',
-         'Tera', 'Peta', 'Exa', 'Zetta', 'Yotta'),
+         'Tera', 'Peta', 'Exa', 'Zetta', 'Yotta', 'Ronna', 'Quetta'),
         chain(map(operator.neg, reversed(eseq)), eseq)
     )
 }
