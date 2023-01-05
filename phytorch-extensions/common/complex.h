@@ -1,5 +1,6 @@
 #pragma once
 
+#include "device.h"
 #include "moremath.h"
 
 #include "c10/util/complex.h" // NOLINT(modernize-deprecated-headers)
@@ -9,7 +10,7 @@ using std::conj; using std::arg; using std::abs;
 
 #define TIMAG T(0, 1)
 
-template <typename T> __host__ __device__ T cnan() {
+template <typename T> PHYTORCH_DEVICE T cnan() {
     static auto ret = numeric_limits<T>::quiet_NaN();
     return ret;
 }
@@ -25,7 +26,7 @@ template <typename T> __host__ __device__ T cnan() {
 #define is_nonpositive_int(a) (is_int(a) and is_nonpositive((a).real()))
 #define are_conjugate(a, b) (conj(a) == (b))
 
-#define DEF_COMPLEX_CHECK template <typename T> __host__ __device__ bool
+#define DEF_COMPLEX_CHECK template <typename T> PHYTORCH_DEVICE bool
 
 DEF_COMPLEX_CHECK isfinite(complex<T> a) { return isfinite(a.real()) and isfinite(a.imag()); }
 

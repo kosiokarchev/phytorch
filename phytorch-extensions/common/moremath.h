@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <limits>
 
 #define CEPHES_MAXLOG 7.09782712893383996843e2

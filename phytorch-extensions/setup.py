@@ -1,53 +1,40 @@
 import os
-import subprocess
 from pathlib import Path
 
-import torch
+import torch.cuda
 from setuptools import setup
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension, _is_cuda_file
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CppExtension
 
 
-class MyBuildExtension(BuildExtension):
-    def build_extension(self, ext: CUDAExtension):
-        _compile = self.compiler.compile
+os.environ['TORCH_SHOW_CPP_STACKTRACES'] = '1'
 
-        def patched_compile(sources, output_dir=None, *args, **kwargs):
-            objects = _compile(sources, output_dir=output_dir, *args, **kwargs)
-            cuda_objects = [obj for src, obj in zip(sources, objects)
-                            if _is_cuda_file(src)]
-            if cuda_objects:
-                cuda_linked_object = os.path.join(os.path.dirname(
-                    cuda_objects[0]), ext.name+'_device_linked.o')
-                cuda_link = [
-                    'nvcc', '--device-link', '--forward-unknown-to-host-compiler', '-fPIC',
-                    '--gpu-architecture=sm_' + ''.join(map(str, torch.cuda.get_device_capability()))
-                ] + [f'-I{incl}' for incl in ext.include_dirs] + cuda_objects + ['-o', cuda_linked_object]
 
-                print('Linking device code')
-                print(' '.join(cuda_link))
-                subprocess.run(cuda_link, cwd=output_dir, check=True)
+use_cuda = torch.cuda.is_available()
+extensions = ('.cpp', '.cu') if use_cuda else ('.cpp',)
 
-                objects.append(cuda_linked_object)
 
-            return objects
+COMPLIER_ARGS = {
+    'cxx': ['-Wno-unused-local-typedefs', '-std=c++17'] + (['-DPHYTORCH_CUDA'] if use_cuda else []),
+    'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda',
+             '-O2', '--relocatable-device-code=true',
+             '--maxrregcount=128', '-std=c++17'],
+}
 
-        self.compiler.compile = patched_compile
-        ret = super().build_extension(ext)
-        self.compiler.compile = _compile
-        return ret
+
+def filefilter(path: Path):
+    return path.suffix.lower() in extensions and not path.name.startswith('_')
+
+
+def ext_from_folder(folder: str):
+    return (CUDAExtension if use_cuda else CppExtension)(
+        folder, list(map(str, filter(filefilter, Path(folder).iterdir()))),
+        extra_compile_args=COMPLIER_ARGS, dlink=True)
 
 
 setup(
     name='phytorch.extensions',
-    ext_modules=[
-        CUDAExtension(folder, [
-            str(_) for _ in filter(lambda _: (_.suffix.lower() in ('.cpp', '.cu') and not _.name.startswith('_')), Path(folder).iterdir())
-        ], extra_compile_args={
-            'nvcc': ['--expt-relaxed-constexpr', '--extended-lambda', '--relocatable-device-code=true', '--maxrregcount=128', '-std=c++17'],
-        }, include_dirs=list(filter(bool, os.environ.get('INCLUDE', '').split(':'))))
-        for folder in (
-            'elliptic', 'roots', 'special',
-        )
-    ],
-    cmdclass={'build_ext': MyBuildExtension}
+    ext_modules=list(map(ext_from_folder, (
+        'elliptic', 'roots', 'special'
+    ))),
+    cmdclass={'build_ext': BuildExtension}
 )
