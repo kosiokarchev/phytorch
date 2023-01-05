@@ -1,5 +1,4 @@
-#include "special.cuh"
-#include "gammahead.cuh"
+#include "gammahead.h"
 
 /*
  * (C) Copyright John Maddock 2006.
@@ -103,7 +102,8 @@ REAL_TEMPLATE T find_inverse_gamma(const T& a, const T& p, const T& q) {
             auto y_4 = y_2 * y_2;
             return y + c1 + (c2 / y) + (c3 / y_2) + (c4 / y_3) + (c5 / y_4);
         }
-    } else {
+    }
+    else {
         /* DiDonato and Morris Eq 31: */
         auto s = find_inverse_s<scalar_t>(p, q);
 
@@ -120,7 +120,8 @@ REAL_TEMPLATE T find_inverse_gamma(const T& a, const T& p, const T& q) {
 
         if ((a >= 500) && (fabs(1 - w / a) < 1e-6)) {
             return w;
-        } else if (p > 0.5) {
+        }
+        else if (p > 0.5) {
             if (w < 3 * a)
                 return w;
             else {
@@ -182,7 +183,7 @@ REAL_TEMPLATE T find_inverse_gamma(const T& a, const T& p, const T& q) {
                 return z;
             else {
                 /* DiDonato and Morris Eq 36: */
-                auto ls = log(didonato_SN<scalar_t>(a, z, 100, ltrl(1e-4)));
+                auto ls = log(didonato_SN<scalar_t, scalar_t>(a, z, 100, ltrl(1e-4)));
                 auto v = log(p) + lgamma(ap1);
                 z = exp((v + z - ls) / a);
                 return z * (1 - (a * log(z) - z - v + ls) / (a - z));

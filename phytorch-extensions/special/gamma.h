@@ -1,4 +1,6 @@
-#include "special.cuh"
+#pragma once
+
+#include "gammahead.h"
 
 COMPLEX_TEMPLATE inline T stirling(T z) {
     auto w = ltrl(1) / z;
@@ -31,3 +33,4 @@ DEFINE_COMPLEX_FUNCTION(gamma, (z)) {
     }
     return stirling<scalar_t>(z) / c;
 }
+

@@ -1,4 +1,4 @@
-#include "meijerg.cuh"
+#include "hyperhead.h"
 
 
 COMPLEX_TEMPLATE auto meijerg_series1(size_t m, size_t n, size_t p, size_t q, T z, T r, vector<T> args) {

@@ -1,5 +1,4 @@
-#include "special.cuh"
-#include "gammahead.cuh"
+#include "gammahead.h"
 
 /*                                                     igam.c
  *
@@ -169,7 +168,7 @@ REAL_TEMPLATE T lgam1p(const T& x) {
 }
 
 
-REAL_TEMPLATE T lanczos_sum_expg_scaled(const T& x) {
+REAL_TEMPLATE T _lanczos_sum_expg_scaled(const T& x) {
     // lanczos approximation
     return HORNER(x, (
         0.006061842346248906525783753964555936883222,
@@ -217,7 +216,7 @@ DEFINE_REAL_FUNCTION(igam_fac, (a, x)) {
     }
 
     auto fac = a + lanczos_g - 0.5;
-    return sqrt(fac / M_E) / lanczos_sum_expg_scaled<scalar_t>(a) * (((a < 200) && (x < 200)) ?
+    return sqrt(fac / M_E) / _lanczos_sum_expg_scaled<scalar_t>(a) * (((a < 200) && (x < 200)) ?
        exp(a - x) * pow(x / fac, a) :
        exp(a * log1pmx<scalar_t>((x - a - lanczos_g + 0.5) / fac) + x * (0.5 - lanczos_g) / fac));
 }

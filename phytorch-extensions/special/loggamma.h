@@ -1,4 +1,6 @@
-#include "special.cuh"
+#pragma once
+
+#include "gammahead.h"
 
 DEFINE_COMPLEX_FUNCTION(loggamma, (z)) {
     if (is_int(z) and is_real_nonpositive(z)) return cnan<T>();

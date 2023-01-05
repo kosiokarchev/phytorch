@@ -1,5 +1,6 @@
-#include "special.cuh"
-#include "gammahead.cuh"
+#pragma once
+
+#include "gammahead.h"
 
 DEFINE_COMPLEX_FUNCTION(digamma, (z)) {
     if (is_int(z) and is_real_nonpositive(z)) return cnan<T>();
@@ -27,7 +28,6 @@ DEFINE_COMPLEX_FUNCTION(digamma, (z)) {
     };
 
     T d = 0, n = 0;
-#pragma unroll
     for (auto k=14; k>0; --k) {
         auto dz = ltrl(1) / (z+k-1);
         auto dd = ltrl(c[k]) * dz;
