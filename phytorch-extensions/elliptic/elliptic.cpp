@@ -1,6 +1,4 @@
 #include "../common/implement.h"
-// TODO: macro-ify more
-
 
 TORCH_IMPLEMENT(elliprc, (x, y))
 TORCH_IMPLEMENT(elliprd, (x, y, z))
@@ -26,7 +24,7 @@ TORCH_IMPLEMENT(ellipdinc, (phi, m))
 TORCH_IMPLEMENT(ellippiinc, (n, phi, m))
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    MDEF(elliprf) MDEF(elliprc) MDEF(elliprj) MDEF(elliprd) MDEF(elliprg)
+    MDEF(elliprc) MDEF(elliprd) MDEF(elliprf) MDEF(elliprg) MDEF(elliprj)
 
     MDEF(ellipk) MDEF(ellipe) MDEF(ellipd) MDEF(ellippi)
     MDEF(csc2)

@@ -1,4 +1,6 @@
-#include "elliptic.cuh"
+#pragma once
+
+#include "elliptic.h"
 
 
 DEFINE_COMPLEX_FUNCTION(elliprj, (x, y, z, p)) {

@@ -1,8 +1,11 @@
-#include "elliptic.cuh"
+#pragma once
+
+#include "elliptic.h"
+
 
 DEFINE_COMPLEX_FUNCTION(csc2, (phi)) {
     auto s = sin(phi);
-    return (s == ltrl(0)) ? std::numeric_limits<T>::infinity() : pow(s, -2);
+    return (s == ltrl(0)) ? TINF : pow(s, -2);
 }
 
 DEFINE_COMPLEX_FUNCTION(ellipk, (m)) {

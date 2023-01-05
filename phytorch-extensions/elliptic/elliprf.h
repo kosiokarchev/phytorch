@@ -1,5 +1,6 @@
-#include "elliptic.cuh"
+#pragma once
 
+#include "elliptic.h"
 
 DEFINE_COMPLEX_FUNCTION(elliprf, (x, y, z)) {
     ELLIPR_CHECK_xyz
@@ -18,8 +19,8 @@ DEFINE_COMPLEX_FUNCTION(elliprf, (x, y, z)) {
 
     ELLIPR_XY
     auto Z = - (X + Y),
-            E2 = X*Y - Z*Z,
-            E3 = X*Y*Z;
+         E2 = X*Y - Z*Z,
+         E3 = X*Y*Z;
 
     return (
         ltrl(1.)

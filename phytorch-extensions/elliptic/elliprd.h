@@ -1,4 +1,6 @@
-#include "elliptic.cuh"
+#pragma once
+
+#include "elliptic.h"
 
 
 DEFINE_COMPLEX_FUNCTION(elliprd, (x, y, z)) {
@@ -18,17 +20,17 @@ DEFINE_COMPLEX_FUNCTION(elliprd, (x, y, z)) {
 
     ELLIPR_XY
     auto Z = - (X + Y) / ltrl(3.),
-            XY = X*Y, Z2 = Z*Z, XYZ = XY*Z,
-            E2 = XY - ltrl(6.)*Z2,
-            E3 = ltrl(3.)*XYZ - ltrl(8.)*Z2*Z,
-            E4 = ltrl(3.) * (XY - Z2) * Z2,
-            E5 = XYZ * Z2;
+         XY = X*Y, Z2 = Z*Z, XYZ = XY*Z,
+         E2 = XY - ltrl(6.)*Z2,
+         E3 = ltrl(3.)*XYZ - ltrl(8.)*Z2*Z,
+         E4 = ltrl(3.) * (XY - Z2) * Z2,
+         E5 = XYZ * Z2;
     return ltrl(3.)*s + ltrl(pow4) / Am / sqrt(Am) * (
-            ltrl(1.)
-            - ltrl(3./14.) * E2
-            + E3 / ltrl(6.)
-            + ltrl(9./88.) * E2*E2
-            - ltrl(3./22.) * E4
-            - ltrl(9./52.) * E2*E3
-            + ltrl(3./26.) * E5);
+        ltrl(1.)
+        - ltrl(3./14.) * E2
+        + E3 / ltrl(6.)
+        + ltrl(9./88.) * E2*E2
+        - ltrl(3./22.) * E4
+        - ltrl(9./52.) * E2*E3
+        + ltrl(3./26.) * E5);
 }
