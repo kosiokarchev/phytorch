@@ -3,3 +3,4 @@
 **/\.hypothesis/**/*
 **/\.pytest_cache/**/*
 /docs/build/
+/phytorch/_version.py

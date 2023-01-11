@@ -1,1 +1,1 @@
-__version__ = '0.0.42.1'
+from ._version import __version__, version, __version_tuple__, version_tuple
