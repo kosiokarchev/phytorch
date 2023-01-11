@@ -1,7 +1,7 @@
 #pragma once
 
 #include "preprocessor.h"
-#include "complex.h"
+#include "complex.h" // NOLINT(modernize-deprecated-headers)
 
 #define DEFINE_FUNCTION_GET_ARG(n, i, names) BOOST_PP_COMMA_IF(i) T BOOST_PP_TUPLE_ELEM(i, names)
 
