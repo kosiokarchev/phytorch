@@ -2,7 +2,23 @@ API
 ===
 
 .. toctree::
+   :caption: Units and Quantities
+
+   units
+   constants
+   quantities
+
+.. toctree::
+   :caption: Cosmology
 
    cosmology
-   interpolate
+
+.. toctree::
+   :caption: Special functions
+
    special
+
+.. toctree::
+   :caption: Interpolation
+
+   interpolate

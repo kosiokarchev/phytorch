@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 import sys
 from typing import Literal
 
@@ -24,7 +25,7 @@ version = release = str(phytorch.__version__)
 
 extensions = [
     'sphinx.ext.intersphinx',
-    'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc', 'sphinx.ext.autosummary',
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
@@ -33,11 +34,16 @@ extensions = [
     'myst_parser',
     'nbsphinx', 'sphinx_gallery.load_style',
     'IPython.sphinxext.ipython_console_highlighting',
+    # 'IPython.sphinxext.ipython_directive',
+    '_ext.ipython_directive',
 
+    # 'sphinx.ext.doctest',
     # 'autoapi.extension',
 
     '_ext.regex_lexer',
-    '_ext.any_tilde'
+    '_ext.any_tilde',
+
+    '_ext.directives'
 ]
 
 intersphinx_mapping = {
@@ -63,6 +69,7 @@ autodoc_type_aliases = {
     # '_TN': 'Tensor-like'
 }
 
+autosummary_generate = False
 
 # AUTOAPI
 # -------
@@ -94,6 +101,9 @@ nbsphinx_execute = 'auto'
 nbsphinx_codecell_lexer = 'python3'
 nbsphinx_allow_errors = True
 
+ipython_rgxin = re.compile(r'>>>\s*(?P<line>.*?)\s*$')
+ipython_promptin = '>>>'
+
 trim_footnote_reference_space = True
 
 # ----------------------------------------------------------------------------
@@ -116,6 +126,9 @@ rst_prolog = nbsphinx_prolog = '''
 .. _pytorch: https://pytorch.org/
 .. |astropy| replace:: `AstroPy`_
 .. _astropy: https://www.astropy.org/
+
+.. |CODATAweb| replace:: CODATA
+.. _CODATAweb: https://codata.org/
 
 .. |citation needed| replace:: `[citation needed]`:superscript:
 .. role:: strike
