@@ -39,7 +39,7 @@ class GlobalScope(AbstractScope, AbstractContextManager):
         self.active = False
 
     def _del(self):
-        self.context.clear()
+        return
 
     def __del__(self):
         if self.active:
@@ -54,8 +54,12 @@ class InitKeysScope(AbstractScope):
 
 
 class AutoCleanupGlobalScope(InitKeysScope, GlobalScope):
+    @staticmethod
+    def keyfilter(key: str):
+        return not key.startswith('__')
+
     def _del(self):
-        for key in self.init_keys:
+        for key in filter(self.keyfilter, self.init_keys):
             self.context.pop(key, None)
 
 

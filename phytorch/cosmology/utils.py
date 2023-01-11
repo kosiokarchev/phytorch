@@ -6,9 +6,9 @@ from typing import Any, TypeAlias, Union
 
 import forge
 
-from phytorch.quantities.quantity import GenericQuantity
-from phytorch.units.unit import Unit
-from phytorch.utils._typing import ValueProtocol
+from ..quantities.quantity import GenericQuantity
+from ..units.unit import Unit
+from ..utils._typing import ValueProtocol
 
 
 _GQuantity: TypeAlias = Union[GenericQuantity, Unit, ValueProtocol]

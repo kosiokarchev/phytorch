@@ -15,10 +15,10 @@ from pytest import fixture, mark, raises
 from torch import Tensor
 
 from phytorch.quantities.quantity import GenericQuantity
+from phytorch.units import Dimension, Unit
 from phytorch.units.angular import deg, radian
 from phytorch.units.exceptions import UnitError
 from phytorch.units.si import centimeter, gram, second
-from phytorch.units.unit import Dimension, Unit
 from phytorch.utils import copy_func, pytree
 
 from tests.common.strategies.tensors import random_tensors
@@ -152,11 +152,14 @@ class TestQfuncsBase:
 
         consume(starmap(partial(cls._compare, assert_values=assert_values), zip(args1, args2)))
 
-    @mark.parametrize('func, out_unit', tuple(map(_tfparam, (
-        (with_complex_arg(torch.angle), radian),
-    ))))
-    def test_to_unit(self, func: Callable, out_unit: Unit, val: _VT, unit: Unit):
+    def _test_to_unit(self, func: Callable, out_unit: Unit, val: _VT, unit: Unit):
         self._compare(func(val/2 * (unit * 2)), func(val) * out_unit)
+
+
+class TestAngle(TestQfuncsBase):
+    test_to_unit = mark.parametrize('func, out_unit', tuple(map(_tfparam, (
+        (with_complex_arg(torch.angle), radian),
+    ))))(TestQfuncsBase._test_to_unit)
 
 
 class TestForbidden(TestQfuncsBase):
@@ -257,7 +260,7 @@ class TestCustom(TestQfuncsBase):
         (torch.reciprocal, lambda u: 1/u),
     ))))
     def test_lambda(self, func: Callable, transform: Callable[[Unit], Unit], val, unit):
-        self.test_to_unit(func, transform(unit), val, unit)
+        self._test_to_unit(func, transform(unit), val, unit)
 
     @mark.parametrize('func, transform', tuple(map(_tfparam, (
         *((f, lambda u: 1/u) for f in (torch.inverse, torch.pinverse)),
@@ -369,7 +372,7 @@ class TestCustom(TestQfuncsBase):
         self._test_add_multiply(func, val_matrix, val2, val3, unit, unit2, unit3, unit4)
 
 
-class SelectorTestBase(TestQfuncsBase, ABC):
+class SelectorMixin(TestQfuncsBase):
     @abstractmethod
     def _selector(self): ...
 
@@ -377,6 +380,18 @@ class SelectorTestBase(TestQfuncsBase, ABC):
     def selector(self):
         return self._selector()
 
+
+class MaskedMixin(SelectorMixin):
+    def _selector(self):
+        return torch.randint(0, 2, self.shape, dtype=torch.bool)
+
+
+class IndexedMixin(SelectorMixin):
+    def _selector(self):
+        return torch.randperm(self.shape[-1])
+
+
+class SelectorTestBase(SelectorMixin, TestQfuncsBase, ABC):
     unary_funcs: Sequence[Callable[[_VT, _VT], _VT]] = ()
     binary_funcs: Sequence[Callable[[_VT, _VT, _VT], _VT]] = ()
     binary_scalar_funcs: Sequence[Callable[[_VT, _VT, _VT], _VT]] = ()
@@ -408,10 +423,7 @@ class SelectorTestBase(TestQfuncsBase, ABC):
         self.test_binary(func, selector, val, torch.tensor(0.5), unit, unit2)
 
 
-class TestMasked(SelectorTestBase):
-    def _selector(self):
-        return torch.randint(0, 2, self.shape, dtype=torch.bool)
-
+class TestMasked(MaskedMixin, SelectorTestBase):
     unary_funcs = (torch.masked_select,)
     binary_funcs = (torch.Tensor.where, torch.masked_scatter)
     binary_scalar_funcs = (torch.masked_fill,)
@@ -625,7 +637,7 @@ class TestTransEtAl(TestQfuncsBase):
     def test_inv_trig(self, func, val: _VT, unit: Unit):
         with raises(UnitError):
             _ = func(val * unit)
-        self.test_to_unit(func, radian, val, Unit())
+        self._test_to_unit(func, radian, val, Unit())
 
     @mark.parametrize('func', (
         torch.exp, torch.exp2, torch.expm1,
@@ -711,7 +723,7 @@ class TestTransEtAl(TestQfuncsBase):
             assert res.allclose(truth)
 
 
-class TestSame(TestQfuncsBase):
+class SameMixin(TestQfuncsBase):
     @staticmethod
     def _test_raise_not_same(func, val, val2, unit, unit2, only_dispatches_on_first=False):
         with raises(UnitError):
@@ -723,6 +735,8 @@ class TestSame(TestQfuncsBase):
             with raises(UnitError):
                 func(val, val2 * unit2)
 
+
+class TestSame(SameMixin):
     _to_nounit = lambda func: pytest.param((func, False), id=func.__name__)
 
     @mark.parametrize('func', (
@@ -798,6 +812,29 @@ class TestSame(TestQfuncsBase):
             func(tuple(v*u for v, u in zip(vals, units)))
 
         self._compare(func(tuple(v*unit for v in vals)), func(vals) * unit)
+
+
+class TestSetitem(SameMixin, MaskedMixin, IndexedMixin):
+    def _test_setitem(self, val, val2, unit, unit2, key):
+        self._test_raise_not_same(
+            lambda a, b: torch.Tensor.__setitem__(a, key, b),
+            val, val2[key], unit, unit2
+        )
+
+        tval = val.clone()
+        tval[key] = val2[key]
+
+        qval = val.clone() * unit
+        qval[key] = val2[key] * unit
+        self._compare(qval, tval * unit)
+
+        qval = val.clone() * unit
+        qval[key] = val2[key]/2 * (2*unit)
+        self._compare(qval, tval * unit)
+
+    def test_setitem(self, val, val2, unit, unit2):
+        self._test_setitem(val, val2, unit, unit2, MaskedMixin._selector(self))
+        self._test_setitem(val, val2, unit, unit2, IndexedMixin._selector(self))
 
 
 class TestProduct(TestQfuncsBase):

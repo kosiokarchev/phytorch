@@ -5,7 +5,7 @@ from itertools import chain
 from math import isclose
 from numbers import Number, Real
 from operator import add, mul, neg
-from typing import cast, Iterable, TYPE_CHECKING, TypeVar, Union
+from typing import cast, Iterable, TYPE_CHECKING, TypeVar, Union, Generic, Optional
 
 from typing_extensions import TypeAlias
 
@@ -13,6 +13,12 @@ from .. import quantities
 from ..utils._typing import _bop, _fractionable, _mop, upcast
 from ..utils.interop import _astropy, AstropyConvertible, BaseToAstropy
 from ..utils.symmetry import product
+
+__all__ = (
+    'Dimension', 'dimensions',
+    'LENGTH', 'TIME', 'MASS', 'CURRENT', 'TEMPERATURE',
+    'Unit'
+)
 
 
 class Dimension(str):
@@ -29,10 +35,19 @@ _aPhysicalTypeT = TypeVar('_aPhysicalTypeT', bound=_astropy.PhysicalType)
 _aUnitBaseT = TypeVar('_aUnitBaseT', bound=_astropy.UnitBase)
 
 
-class UnitBase(AstropyConvertible[_UnitBaseT, _aPhysicalTypeT], dict):
+class UnitBase(AstropyConvertible[_UnitBaseT, _aPhysicalTypeT], dict[Dimension, Fraction], Generic[_UnitBaseT, _aPhysicalTypeT]):
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            (Dimension(key), val)
+            for key, val in dict(*args, **kwargs).items()
+            for val in [Fraction(val).limit_denominator()]
+            if val != 0
+        )
+
     @classmethod
     def _make(cls, iterable: Iterable[tuple[Dimension, _fractionable]], **kwargs):
-        return cls(((key, val) for key, val in iterable for val in [Fraction(val).limit_denominator()] if val != 0), **kwargs)
+        # needed because of Constant.__init__ having different signature...
+        return cls(iterable, **kwargs)
 
     def __missing__(self, key: Dimension):
         assert isinstance(key, Dimension),\
@@ -83,6 +98,9 @@ class UnitBase(AstropyConvertible[_UnitBaseT, _aPhysicalTypeT], dict):
     __mod__ = __truediv__
     __rmod__ = __rtruediv__
 
+    def __hash__(self):
+        return hash(tuple(sorted(self.items())))
+
 
     class _toAstropy(BaseToAstropy[_UnitBaseT, _aPhysicalTypeT]):
         _dimmap = {
@@ -103,7 +121,18 @@ class ValuedFloat(float):
         return self
 
 
-class Unit(UnitBase[_UnitT, _aUnitBaseT]):
+class Unit(UnitBase[_UnitT, _aUnitBaseT], Generic[_UnitT, _aUnitBaseT]):
+    """Class representing a (linear) physical unit."""
+
+    name: Optional[str]
+    """The name of the unit"""
+
+    value: Real
+    """Scale of the unit in relation to the "base" unit of its dimension."""
+
+    dimension: UnitBase
+    """Dimension of the unit as a `UnitBase`."""
+
     def __init__(self, *args, value: Real = Fraction(1), name=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.value = value
@@ -123,6 +152,9 @@ class Unit(UnitBase[_UnitT, _aUnitBaseT]):
 
     def __str__(self):
         return self.name or f'{self.value} x {super().__str__()}'
+
+    def __format__(self, format_spec):
+        return str(self).__format__(format_spec)
 
     @property
     def bracketed_name(self):
@@ -154,6 +186,9 @@ class Unit(UnitBase[_UnitT, _aUnitBaseT]):
     def __eq__(self, other):
         return isinstance(other, Unit) and self.value == other.value and super().__eq__(other)
 
+    def __hash__(self):
+        return hash((float(self.value), self.dimension))
+
     def isclose(self, other, *args, **kwargs):
         return isinstance(other, Unit) and isclose(self.value, other.value, *args, **kwargs) and super().__eq__(other)
 
@@ -167,8 +202,8 @@ class Unit(UnitBase[_UnitT, _aUnitBaseT]):
 
 
     class _toAstropy(UnitBase._toAstropy[_UnitT, _aUnitBaseT]):
-        def __call__(self):
-            return super().__call__() * self._.value
+        def __call__(self, name=None):
+            return _astropy.units.def_unit(name or self._.name, super().__call__() * self._.value)
 
 
 _mul_other: TypeAlias = Union[Unit, Real, 'quantities.quantity.GenericQuantity']

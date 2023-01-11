@@ -22,6 +22,8 @@ def _cdvann(unit: Unit, descr: str) -> Type[Real]:
 
 @dataclass
 class CODATA_vals:
+    """A collection of values for the defined constants of a `CODATA` set."""
+
     c: _cdvann(m / s, 'speed of light in vacuum')
     h: _cdvann(J * s, 'Planck constant')
     k: _cdvann(J / K, 'Boltzman constant')
@@ -96,6 +98,13 @@ def derived_constant(descr: str):
 
 
 class CODATA(ModuleType):
+    """A `module` that represents a set of |CODATAweb|_ constants.
+
+    It is instantiated with a set of `CODATA_vals` for the defined constants.
+    It can then automatically calculates derived constants (on demand) and
+    caches them.
+    """
+
     @classmethod
     @property
     def __all__(cls):
