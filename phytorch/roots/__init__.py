@@ -21,7 +21,7 @@ def vieta(rts: Sequence[Tensor]) -> Sequence[Tensor]:
 def companion_matrix(*coeffs: Tensor) -> Tensor:
     return torch.cat((
         - (p := torch.stack(torch.broadcast_tensors(*coeffs), -1).unsqueeze(-2)),
-        torch.eye(len(coeffs) - 1, len(coeffs)).expand(*p.shape[:-2], len(coeffs) - 1, len(coeffs))
+        torch.eye(len(coeffs) - 1, len(coeffs), dtype=p.dtype, device=p.device).expand(*p.shape[:-2], len(coeffs) - 1, len(coeffs))
     ), -2)
 
 

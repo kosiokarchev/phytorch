@@ -37,24 +37,11 @@ automatic.
    .. code-block::
 
       cd phytorch-extensions
-      python setup.py build_ext
-
-   .. warning::
-
-      Building the extensions currently **requires** you to have a CUDA compiler,
-      which, I realise, sucks. I'm working on making a cpu-only version possible.
-
-   Finally, the extensions, which have now been built in a folder like
-   ``phytorch-extensions/build/lib*``, need to be linked to
-   ``phytorch/extension``::
-
-      cd ../phytorch/extensions
-      ln -s ../../phytorch-extensions/build/lib*/* .
-
+      python setup.py build_ext -b ../phytorch/extensions
 
    .. todo::
 
-      Automate installation of the extensions.
+      Automate compiling the extensions.
 
 Contents
 --------

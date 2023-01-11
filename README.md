@@ -39,17 +39,7 @@ Therefore, installation has two steps, but should otherwise be fully automatic.
 2. Then, to compile the extensions,
     ```shell
     cd phytorch-extensions
-    python setup.py build_ext
-    ```
-   > **Warning**
-   > *Building the extensions currently requires you to have a CUDA compiler,
-   > which, I realise, sucks. I’m working on making a cpu-only version possible.*
-
-    Finally, the extensions, which have now been built in a folder like
-    `phytorch-extensions/build/lib*`, need to be linked to `phytorch/extensions`:
-    ```shell
-    cd ../phytorch/extensions
-    ln -s ../../phytorch-extensions/build/lib*/* .
+    python setup.py build_ext -b ../phytorch/extensions
     ```
 
 ---
