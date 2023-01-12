@@ -6,7 +6,7 @@ from hypothesis import assume, given
 from more_itertools import pairwise
 from pytest import mark, raises
 
-from phytorch.units.unit import Dimension, dimensions, Unit
+from phytorch.units import Dimension, dimensions, Unit
 from phytorch.utils._typing import ValueProtocol
 
 from tests.common.strategies.units import units_strategy, values_strategy

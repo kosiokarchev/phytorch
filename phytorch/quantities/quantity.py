@@ -3,21 +3,25 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import MutableMapping, Protocol, Type, TypeVar, Union
 
+from typing_extensions import Self
+
 from .delegating import Delegating
 from ..meta import Meta
 from ..units.unit import Unit
 
 
 class QuantityBackendProtocol(Protocol):
-    def as_subclass(self: _t, cls: Type[_t]) -> _t: ...
-    def clone(self: _t, *args, **kwargs) -> _t: ...
-    def to(self: _t, *args, **kwargs) -> _t: ...
+    def as_subclass(self, cls: Type[_t]) -> _t: ...
+    def clone(self, *args, **kwargs) -> Self: ...
+    def to(self, *args, **kwargs) -> Self: ...
 
 
 _t = TypeVar('_t', bound=QuantityBackendProtocol)
 
 
 class GenericQuantity(Delegating[_t], Meta):
+    """A *quantity*: combining a `Unit` with numerical functionalities provided by a backend type."""
+
     _generic_quantity_subtypes: MutableMapping[Type, Type[GenericQuantity]] = OrderedDict()
 
     def __init_subclass__(cls, **kwargs):
@@ -25,7 +29,7 @@ class GenericQuantity(Delegating[_t], Meta):
         cls._generic_quantity_subtypes.setdefault(cls._T, cls)
 
     @classmethod
-    def _from_bare_and_unit(cls, bare: _t, unit: Unit) -> GenericQuantity[_t]:
+    def _from_bare_and_unit(cls, bare: _t, unit: Unit) -> Self:
         ret = bare.as_subclass(cls)
         ret.unit = unit
         return ret

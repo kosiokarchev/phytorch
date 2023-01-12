@@ -23,15 +23,22 @@ automatic.
 
    .. code-block::
 
-      pip install .
+      pip install -e .
 
-   This will automatically install the few dependencies and the pure-|Python| code.
-   If you are not interested in special functions and differentiable
-   cosmographic distances, you're good to go!
+   This will automatically install the few dependencies and the pure-|Python|
+   code (in developer mode, so that it runs out of the current directory
+   instead of ``site-packages``). If you are not interested in special
+   functions and differentiable cosmographic distances, you're good to go!
 
-   .. todo::
+   .. note::
 
-      Release the package to PyPI!
+      In that case, you can also now install the pure-Python components from
+      `PyPI <https://pypi.org/project/phytorch/>`_ using
+
+      .. code-block::
+
+         pip install phytorch
+
 #. Then, to compile the extensions,
 
    .. code-block::

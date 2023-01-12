@@ -1,22 +1,22 @@
 import sys
 from functools import partial
+from importlib import import_module
 from itertools import chain
 from typing import Annotated, Callable, cast, MutableMapping, Type, TYPE_CHECKING
 
-from .astro import *
 from .codata import CODATA, CODATA_vals
-
 
 if TYPE_CHECKING:
     from ._codata import *
+    from .astro import *
 
 
 _this_module = sys.modules[__name__]
 _factories: MutableMapping[str, Callable] = {
-    'default': lambda: getattr(_this_module, 'codata2018')
+    'default': lambda: getattr(_this_module, 'codata2018'),
+    'astro': lambda: import_module('.astro', __package__)
 }
-_default = lambda: getattr(_this_module, 'default')
-default: CODATA
+_default_keys = 'default', 'astro'
 
 
 def _codata_mod(name: str, vals: CODATA_vals, doc: str = None):
@@ -38,6 +38,9 @@ codata2014: _codata_mod('codata2014', CODATA_vals(
     m_e=9.109_383_56e-31,
     u=1.660_539_040e-27
 ))
+r"""CODATA 2014 release:
+`<https://pml.nist.gov/cuu/pdf/wall_2014.pdf>`_."""
+
 codata2018: _codata_mod('codata2018', CODATA_vals(
     c=299_792_458,
     h=6.626_070_15e-34,
@@ -53,19 +56,38 @@ codata2018: _codata_mod('codata2018', CODATA_vals(
     m_e=9.109_383_7015e-31,
     u=1.660_539_066_60e-27,
 ))
+r"""CODATA 2018 release:
+`<https://pml.nist.gov/cuu/pdf/wall_2018.pdf>`_."""
+
+
+default: CODATA
+"""The default set of CODATA constants. Currently points to `codata2018`.
+
+Attempting to access a variable on the top-level `~phytorch.constants` module
+will attempt to look the variable up on `~phytorch.constants.default`, which
+allows accessing the default constants directly from `phytorch.constants`."""
+
+
+def _module_all(mod):
+    return mod.__all__ if hasattr(mod, '__all__') else dir(mod)
 
 
 def __getattr__(name):
     if name in _factories:
         ret = _factories[name]()
-    elif name in (d := _default()).__all__:
-        ret = getattr(d, name)
     else:
-        raise AttributeError(f'module \'{__name__}\' has no attribute \'{name}\'.')
+        for key in _default_keys:
+            if name in _module_all(mod := _factories[key]()):
+                ret = getattr(mod, name)
+                break
+        else:
+            raise AttributeError(f'module \'{__name__}\' has no attribute \'{name}\'.')
 
     globals()[name] = ret
     return ret
 
 
 def __dir__():
-    return chain.from_iterable(map(set, (globals().keys(), _factories.keys(), _default().__all__)))
+    return set(chain(globals().keys(), _factories.keys(), *(
+        _module_all(_factories[key]()) for key in _default_keys
+    )))

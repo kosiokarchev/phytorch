@@ -4,8 +4,8 @@ from pytest import mark
 from phytorch import constants as consts
 from phytorch.constants.codata import CODATA
 from phytorch.constants.constant import Constant
+from phytorch.units import Unit
 from phytorch.units.si import metre
-from phytorch.units.unit import Unit
 
 from tests.common.strategies.units import constants_strategy
 

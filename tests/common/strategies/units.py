@@ -3,7 +3,7 @@ from itertools import repeat
 from hypothesis import strategies as st
 
 from phytorch.constants.constant import Constant
-from phytorch.units.unit import Dimension, dimensions, Unit
+from phytorch.units import Dimension, dimensions, Unit
 
 
 # This tests using a custom dimension

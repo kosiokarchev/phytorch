@@ -10,11 +10,13 @@ from .signatures import sigdict
 from ..units.unit import Unit
 
 
-class TorchQuantityMeta(type(GenericQuantity), type(Tensor)):
+class TensorQuantityMeta(type(GenericQuantity), type(Tensor)):
     pass
 
 
-class TensorQuantity(GenericQuantity[Tensor], Tensor, metaclass=TorchQuantityMeta):
+class TensorQuantity(GenericQuantity[Tensor], Tensor, metaclass=TensorQuantityMeta):
+    """A `GenericQuantity` backed by  a `~torch.Tensor`."""
+
     @property
     def value(self) -> Tensor:
         with self.delegator_context:

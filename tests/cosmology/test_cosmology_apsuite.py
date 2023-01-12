@@ -16,9 +16,10 @@ import phytorch.cosmology.drivers.analytic_diff as analytic_diff
 import phytorch.cosmology.drivers.odeint as odeint
 import phytorch.cosmology.special as special
 from phytorch.constants import codata2014, G as Newton_G
+from phytorch.units import Unit
 from phytorch.units.astro import Gpc, Gyr, Mpc
 from phytorch.units.si import cm, gram, kelvin, km, s
-from phytorch.units.unit import Unit
+
 from tests.common.closeness import close
 from tests.common.dtypes import with_default_double
 

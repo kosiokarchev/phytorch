@@ -6,9 +6,9 @@ from hypothesis import assume, given
 from torch import Tensor
 
 from phytorch.quantities.tensor_quantity import TensorQuantity
+from phytorch.units import Unit
 from phytorch.units._si.base import meter, second
 from phytorch.units.exceptions import UnitError
-from phytorch.units.unit import Unit
 
 from tests.common import are_same_view
 from tests.common.strategies.tensors import n_broadcastable_random_tensors, random_tensors

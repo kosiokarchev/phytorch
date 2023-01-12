@@ -223,6 +223,8 @@ same_to_nounit = DimSpec(repeat('unit'), False)
 
 
 class _dimspecs:
+    __setitem__ = DimSpec(('unit', False, 'unit'), False)
+
     (eq, equal, ne, not_equal,
      gt, greater, ge, greater_equal,
      lt, less, le, less_equal) = same_to_nounit
@@ -326,8 +328,8 @@ class _dimspecs:
 
     sqrt = DimSpec(ret=lambda unit: unit ** Fraction(1, 2))
     rsqrt = DimSpec(ret=lambda unit: unit ** Fraction(-1, 2))
-    square = var = cov = DimSpec(ret=lambda unit: unit ** Fraction(2))
-    var_mean = DimSpec(ret=lambda unit: (unit ** Fraction(2), unit))
+    square = var = cov = DimSpec(ret=lambda unit: unit ** 2)
+    var_mean = DimSpec(ret=lambda unit: (unit ** 2, unit))
 
     inverse = pinverse = reciprocal = DimSpec(ret=lambda unit: ~unit)
 

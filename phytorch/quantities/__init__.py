@@ -1,5 +1,7 @@
-from . import quantity
+from .quantity import GenericQuantity
 
-# If not for anything else, this import is necessary to ensure that
-# TensorQuantity is registered in GenericQuantity._generic_quantiy_subtypes.
+# TODO: do this lazily:
+#   Need to ensure that whenever Generic Quantity is defined, TensorQuantity is
+#   registered in GenericQuantity._generic_quantiy_subtypes, so that
+#   multiplication by Unit works.
 from .tensor_quantity import TensorQuantity as Quantity
