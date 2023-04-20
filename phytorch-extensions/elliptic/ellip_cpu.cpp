@@ -1,19 +1,19 @@
 #include "../common/implement_cpu.h"
 #include "ellip.h"
 
-IMPLEMENT_CPU(ellipk)
-IMPLEMENT_CPU(ellipe)
-IMPLEMENT_CPU(ellipd)
-IMPLEMENT_CPU(ellippi)
+IMPLEMENT_CPU(ellipk, complex<scalar_t>)
+IMPLEMENT_CPU(ellipe, complex<scalar_t>)
+IMPLEMENT_CPU(ellipd, complex<scalar_t>)
+IMPLEMENT_CPU(ellippi, complex<scalar_t>)
 
-IMPLEMENT_CPU(csc2)
+IMPLEMENT_CPU(csc2, complex<scalar_t>)
 
-IMPLEMENT_CPU(ellipkinc_)
-IMPLEMENT_CPU(ellipeinc_)
-IMPLEMENT_CPU(ellipdinc_)
-IMPLEMENT_CPU(ellippiinc_)
+IMPLEMENT_CPU(ellipkinc_, complex<scalar_t>)
+IMPLEMENT_CPU(ellipeinc_, complex<scalar_t>)
+IMPLEMENT_CPU(ellipdinc_, complex<scalar_t>)
+IMPLEMENT_CPU(ellippiinc_, complex<scalar_t>)
 
-IMPLEMENT_CPU(ellipkinc)
-IMPLEMENT_CPU(ellipeinc)
-IMPLEMENT_CPU(ellipdinc)
-IMPLEMENT_CPU(ellippiinc)
+IMPLEMENT_CPU(ellipkinc, complex<scalar_t>)
+IMPLEMENT_CPU(ellipeinc, complex<scalar_t>)
+IMPLEMENT_CPU(ellipdinc, complex<scalar_t>)
+IMPLEMENT_CPU(ellippiinc, complex<scalar_t>)

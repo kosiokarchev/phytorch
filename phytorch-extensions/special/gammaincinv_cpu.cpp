@@ -1,5 +1,5 @@
 #include "../common/implement_cpu.h"
 #include "gammaincinv.h"
 
-IMPLEMENT_CPU(gammaincinv)
-IMPLEMENT_CPU(gammainccinv)
+IMPLEMENT_CPU(gammaincinv, scalar_t)
+IMPLEMENT_CPU(gammainccinv, scalar_t)
