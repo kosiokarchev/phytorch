@@ -5,8 +5,9 @@ import torch
 from pytest import mark
 from torch import Tensor
 
+from phytorchx import insert_dims
+
 from phytorch.interpolate.abc import AbstractBatchedInterpolator
-from phytorch.utils.broadcast import insert_dims
 
 
 class BaseTestShapes:

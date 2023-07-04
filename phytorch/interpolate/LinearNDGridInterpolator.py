@@ -4,8 +4,9 @@ from typing import Sequence
 import torch
 from torch import Tensor
 
+from phytorchx import broadcast_gather
+
 from .abc import AbstractBatchedInterpolator
-from ..utils.broadcast import broadcast_gather
 
 
 class LinearNDGridInterpolator(AbstractBatchedInterpolator):

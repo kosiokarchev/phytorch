@@ -8,8 +8,8 @@ import torch
 from more_itertools import ichunked
 from torch import LongTensor, Tensor
 
-from ..utils import polyval
-from ..utils.broadcast import broadcast_except, broadcast_gather
+from phytorchx import polyval, broadcast_except, broadcast_gather
+
 from ..utils.symmetry import product
 
 

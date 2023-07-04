@@ -5,7 +5,7 @@ import torch
 from more_itertools import first
 from torch import searchsorted, Size, Tensor
 
-from ..utils.broadcast import broadcast_except
+from phytorchx import broadcast_except
 
 
 # TODO: Abstract further

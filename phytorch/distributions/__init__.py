@@ -5,8 +5,9 @@ from more_itertools import last
 from torch import Size, Tensor
 from torch.distributions import Distribution
 
+from phytorchx import mid_many
+
 from ..interpolate import Linear1dInterpolator, LinearNDGridInterpolator
-from ..utils import _mid_many
 
 
 class NDIDistribution(Distribution):
@@ -24,7 +25,7 @@ class NDIDistribution(Distribution):
         self.marginal_cprobs = [
             torch.cat((torch.zeros_like(norm), cprob / norm), i)
             # (cprob - cprob.narrow(i, 0, 1)) / (cprob.narrow(i, -1, 1) - cprob.narrow(i, 0, 1))
-            for i in range(-self.ndim, 0) for p in [_mid_many(self.probs, (i,))] for mprob in [
+            for i in range(-self.ndim, 0) for p in [mid_many(self.probs, (i,))] for mprob in [
                 p.sum(tuple(range(-self.ndim, i)))
                 if i > -self.ndim else p
             ] for cprob in [mprob.cumsum(i)] for norm in [cprob.narrow(i, -1, 1)]

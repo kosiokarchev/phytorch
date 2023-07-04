@@ -7,8 +7,9 @@ from typing import Callable
 import torch
 from torch import Tensor
 
+from phytorchx import aligned_expand, broadcast_gather, broadcast_left
+
 from .abc import AbstractBatchedInterpolator
-from ..utils.broadcast import aligned_expand, broadcast_gather, broadcast_left
 
 
 def merge_grids(left: Tensor, right: Tensor) -> tuple[Tensor, tuple[Tensor, Tensor]]:

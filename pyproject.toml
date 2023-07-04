@@ -23,12 +23,13 @@ requires-python = ">=3.9"
 
 dependencies = [
     "frozendict",
-    "more_itertools",
-    "typing_extensions",
+    "more-itertools",
+    "typing-extensions",
     "python-forge",
     "sympy",
     "mpmath",
-    "torch>=1.13"
+    "torch>=1.13",
+    "phytorchx"
 ]
 
 dynamic = ["version"]
@@ -55,7 +56,7 @@ exclude = ["phytorch-extensions*"]
 phytorch = ["**/*.pyi"]
 
 [tool.setuptools.dynamic]
-version = {attr = "phytorch.__version__"}
+version = {attr = "phytorch._version.__version__"}
 
 [tool.setuptools_scm]
 write_to = "phytorch/_version.py"
