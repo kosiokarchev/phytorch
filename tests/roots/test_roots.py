@@ -45,7 +45,7 @@ def test_companion_matrix_batched(coeffs):
 @with_default_double
 @given(coeffs_strategy())
 def test_vieta(coeffs):
-    for c, _c in zip(coeffs, vieta(roots(*coeffs))[1:]):
+    for c, _c in zip(coeffs, vieta(roots(*coeffs))):
         assert allclose(_c, c, rtol=1e-3, atol=1e-3)
 
 

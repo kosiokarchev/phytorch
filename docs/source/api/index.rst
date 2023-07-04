@@ -22,3 +22,8 @@ API
    :caption: Interpolation
 
    interpolate
+
+.. toctree::
+   :caption: Other
+
+   roots

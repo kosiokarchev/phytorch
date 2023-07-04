@@ -68,7 +68,7 @@ class wCDMR(RadiationFLRWMixin, wCDM, ABC):
 
 
 class LambdaCDM(wCDM[_LambdaCDMT, _astropy.cosmology.LambdaCDM], ABC):
-    """Dark energy from a cosmological constant :math:`\Lambda`, implying an equation of state
+    r"""Dark energy from a cosmological constant :math:`\Lambda`, implying an equation of state
 
     .. math::
        w(z) = w_0 = -1.

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Iterable, Union
+from warnings import catch_warnings, filterwarnings
 
 import torch
 from more_itertools import first
@@ -37,7 +38,9 @@ class AbstractBatchedInterpolator(ABC):
     # TODO: handle out of bounds
     @staticmethod
     def project_one(x: Tensor, grid: Tensor) -> Tensor:
-        return searchsorted(*broadcast_except(grid, x, dim=-1), right=True).clamp_(1, grid.shape[-1]-1).sub_(1)
+        with catch_warnings():
+            filterwarnings('ignore', message='torch.searchsorted()', category=UserWarning)
+            return searchsorted(*broadcast_except(grid, x, dim=-1), right=True).clamp_(1, grid.shape[-1]-1).sub_(1)
 
     @abstractmethod
     def __call__(self, x: Tensor) -> Tensor: ...

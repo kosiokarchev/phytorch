@@ -22,7 +22,7 @@ CODATA constants
 
 `CODATA` constants fall in several categories (here we list values from `default`):
 
-- fundamental defined constants with values set by defining the measurement system itself:
+- fundamental defined constants with values set by defining the system of units itself:
 
     .. list-table::
        :header-rows: 1
@@ -43,7 +43,7 @@ CODATA constants
          - :math:`h`
          - :math:`6.626\,070\,15 \times 10^{-34}\ \mathrm{J}\,\mathrm{s}`
        * - .. ptconst:: k
-         - Boltzman constant
+         - Boltzmann constant
          - :math:`k`
          - :math:`1.380\,649 \times 10^{-23}\ \mathrm{J} / \mathrm{K}`
        * - .. ptconst:: e

@@ -26,7 +26,7 @@ class CODATA_vals:
 
     c: _cdvann(m / s, 'speed of light in vacuum')
     h: _cdvann(J * s, 'Planck constant')
-    k: _cdvann(J / K, 'Boltzman constant')
+    k: _cdvann(J / K, 'Boltzmann constant')
     N_A: _cdvann(Unit(), 'Avogadro constant')
     e: _cdvann(C, 'elementary charge')
     atm: _cdvann(Pa, 'standard atmosphere')

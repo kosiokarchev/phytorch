@@ -1,3 +1,5 @@
+"""Classes for univariate and multidimensional interpolation. Batched, of course."""
+
 import torch
 
 from .Linear1dInterpolator import Linear1dInterpolator

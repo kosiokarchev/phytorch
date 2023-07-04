@@ -39,6 +39,7 @@ class BaseAnalyticFLRWDriver(FLRWDriver, ABC):
 
 class BaseAnalyticLambdaCDM(BaseAnalyticFLRWDriver, special.LambdaCDM, ABC):
     _epoly_degree = 3
+    _roots_force_numeric = False
 
     @property
     def _epoly_leading(self) -> _TN:

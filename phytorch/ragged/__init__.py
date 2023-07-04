@@ -60,4 +60,10 @@ class RaggedTensor:
     def broadcast_to(self, shape: RaggedShape):
         assert self.shape.ndim < shape.ndim
         assert RaggedShape.broadcastable(self.shape, shape)
-        return RaggedTensor(self.data.expand(self.data.shape[:-1] + (len(shape.lens[self.shape.ndim]),)).repeat_interleave(self.data.new_tensor(shape.sizes[self.shape.ndim], dtype=int), dim=-1, output_size=shape.size), shape)
+        return RaggedTensor(
+            self.data
+                .expand(self.data.shape[:-1] + (len(shape.lens[self.shape.ndim]),))
+                .repeat_interleave(
+                    self.data.new_tensor(shape.sizes[self.shape.ndim], dtype=int),
+                    dim=-1, output_size=shape.size),
+            shape)

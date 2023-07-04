@@ -1,7 +1,7 @@
 ``phytorch.interpolate``
 ========================
 
-Classes for univariate and multidimensional interpolation. Batched, of course.
+.. automodule:: phytorch.interpolate
 
 Splines
 -------
