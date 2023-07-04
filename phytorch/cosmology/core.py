@@ -3,14 +3,15 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import partial, partialmethod
 from math import inf, pi
-from typing import Any, ClassVar, Generic, get_type_hints, Mapping, TYPE_CHECKING, TypeVar
+from typing import Any, ClassVar, Generic, get_type_hints, Mapping, TYPE_CHECKING, TypeVar, Union
 
 import forge
 import torch
 
-from .utils import _GQuantity, _no_value, AbstractParameter, Parameter, PropertyParameter
+from .utils import _GQuantity, _no_value, AbstractParameter, Parameter, PropertyParameter, Hunit, Hdim
 from ..constants import c as speed_of_light, G as Newton_G
 from ..math import complexify, csinc, log10, realise, sinc
+from ..quantities import GenericQuantity
 from ..units.angular import steradian
 from ..units.astro import Mpc, pc
 from ..units.si import km, s
@@ -38,6 +39,7 @@ class Cosmology(AstropyConvertible[_CosmologyT, _acCosmologyT], Generic[_Cosmolo
         for key, val in kwargs.items():
             if val is not _no_value:
                 setattr(self, key, val)
+        return self
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -312,6 +314,10 @@ class FLRW(FLRWDriver[_FLRWT, _acCosmologyT], ABC):
         --------
         :py:meth:`astropy.cosmology.FLRW.H`"""
         return self.H0 * self.efunc(z)
+
+    def eval_hunit(self, x: Union[GenericQuantity, Unit]):
+        """Conform a `GenericQuantity` or `Unit` that depends on the Hubble parameter to the particular value in this cosmology."""
+        return x / (Hunit / self.H0.to(km/s/Mpc))**x.unit[Hdim]
 
     @property
     def hubble_time(self) -> _GQuantity:
