@@ -10,6 +10,15 @@ from phytorchx import mid_many
 from ..interpolate import Linear1dInterpolator, LinearNDGridInterpolator
 
 
+def quantile(arr, q, weights=None, axis=-1):
+    if weights is None:
+        weights = torch.ones_like(arr)
+
+    arr, weights = (_.movedim(axis, -1) for _ in torch.broadcast_tensors(arr, weights))
+
+    return Linear1dInterpolator(weights.cumsum(-1) / weights.sum(-1, keepdims=True), arr, channel_ndim=0)(q.reshape(*q.shape, *(arr.ndim-1)*(1,)))
+
+
 class NDIDistribution(Distribution):
     arg_constraints = {}
 
