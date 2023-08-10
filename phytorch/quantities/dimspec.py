@@ -248,6 +248,7 @@ class _dimspecs:
     # gradient(..., spacing: Iterable, dim: Iterable)
     #   -> *(gradient(..., spacing=..., dim=int)[0] for ...),
     gradient = div = divide = true_divide = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: unit1 / unit2)
+    __rdiv__ = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: unit2 / unit1)
 
     __rmod__ = fmod = remainder = same
     __floordiv__ = __rfloordiv__ = floor_divide = same_to_nounit
