@@ -272,7 +272,7 @@ class SplineNd:
         self.batch_shape = torch.broadcast_shapes(*(_x0.shape[:-1] for _x0 in x0s))
         self.ndim = len(self.grid_shape)
 
-    def evaluate(self, y0, *xs):
+    def evaluate(self, y0: Tensor, *xs: Tensor):
         r"""Evaluate the n-dimensional spline as a multilinear "product" of 1-dim splines:
 
         .. math::
@@ -298,3 +298,16 @@ class SplineNd:
         return torch.einsum(*chain.from_iterable(
             (s.weights(x), [..., i]) for i, (s, x) in enumerate(zip(self.splines, xs))
         ), y0, [..., *range(self.ndim)])
+
+    class _Conditioned:
+        def __init__(self, splinend: 'SplineNd', *xs: Tensor):
+            self.splinend = splinend
+            self.weights = tuple(chain.from_iterable(
+                (s.weights(x), [..., i]) for i, (s, x) in enumerate(zip(self.splinend.splines, xs))
+            ))
+
+        def __call__(self, y0: Tensor):
+            return torch.einsum(*self.weights, y0, [..., *range(self.splinend.ndim)])
+
+    def condition(self, *xs):
+        return self._Conditioned(self, *xs)
