@@ -25,8 +25,8 @@ class LinearNDGridInterpolator(AbstractBatchedInterpolator):
     def __call__(self, x: Tensor):
         assert x.shape[-1] == self.ndim
 
-        idxs, ws = self._unsqueeeze_channels(*(
-            torch.stack(_, -1).unsqueeze(-2)
+        idxs, ws = (
+            self._unsqueeeze_channels(torch.stack(_, -1).unsqueeze(-2))
             for _ in zip(*(
                 (idx, w)
                 for g, dg, _x in zip(self.grids, self.dgrids, x.split(1, -1))
@@ -34,7 +34,8 @@ class LinearNDGridInterpolator(AbstractBatchedInterpolator):
                 for idx in [self.project_one(_x, g)]
                 for dgrid in [broadcast_gather(dg, -1, idx)]
                 for w in [1 - (_x - broadcast_gather(g, -1, idx)) / dgrid]
-            ))))
+            ))
+        )
 
         idxs = ((idxs + self.di) * self.strides).sum(-1)
         ws = (self.di - ws).prod(-1).abs()

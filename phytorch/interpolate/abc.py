@@ -30,10 +30,8 @@ class AbstractBatchedInterpolator(ABC):
     def interp_input(*args: Tensor):
         return torch.stack(torch.broadcast_tensors(*map(torch.as_tensor, args)), -1)
 
-    def _unsqueeeze_channels(self, *tensors, pos=-4) -> Union[Tensor, Iterable[Tensor]]:
-        res = ((t.unsqueeze(pos).unflatten(pos, (1,) * self.channel_ndim) for t in tensors)
-               if self.channel_ndim else tensors)
-        return res if len(tensors) > 1 else first(res)
+    def _unsqueeeze_channels(self, t: Tensor, pos=-4) -> Tensor:
+        return t.unsqueeze(pos).unflatten(pos, (1,) * self.channel_ndim) if self.channel_ndim else t
 
     # TODO: handle out of bounds
     @staticmethod
