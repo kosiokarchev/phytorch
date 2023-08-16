@@ -29,6 +29,7 @@ dependencies = [
     "sympy",
     "mpmath",
     "torch>=1.13",
+    "optree",
     "phytorchx"
 ]
 

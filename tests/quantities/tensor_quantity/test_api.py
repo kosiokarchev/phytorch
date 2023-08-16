@@ -7,6 +7,7 @@ from itertools import chain, repeat, starmap
 from random import choices
 from typing import Callable, Iterable, Sequence, TYPE_CHECKING, Union
 
+import optree
 import pytest
 import torch
 from hypothesis import given, strategies as st
@@ -19,7 +20,7 @@ from phytorch.units import Dimension, Unit
 from phytorch.units.angular import deg, radian
 from phytorch.units.exceptions import UnitError
 from phytorch.units.si import centimeter, gram, second
-from phytorch.utils import copy_func, pytree
+from phytorch.utils import copy_func
 
 from tests.common.strategies.tensors import random_tensors
 from tests.common.strategies.units import dimful_units_strategy, units_strategy
@@ -146,8 +147,8 @@ class TestQfuncsBase:
 
     @classmethod
     def _tree_compare(cls, val1, val2, assert_values=True):
-        args1, tree1 = pytree.tree_flatten(val1)
-        args2, tree2 = pytree.tree_flatten(val2)
+        args1, tree1 = optree.tree_flatten(val1, none_is_leaf=True)
+        args2, tree2 = optree.tree_flatten(val2, none_is_leaf=True)
         assert tree1 == tree2
 
         consume(starmap(partial(cls._compare, assert_values=assert_values), zip(args1, args2)))
@@ -311,7 +312,7 @@ class TestCustom(TestQfuncsBase):
 
     @mark.parametrize('transform, func', (*map(partial(_tfparam, i=1), (
         *((lambda res, unit: (res[0] * unit, res[1]), f)
-          for f in (torch.lu, torch.linalg.lu_factor, torch.linalg.eig, torch.symeig)),
+          for f in (torch.lu, torch.linalg.lu_factor, torch.linalg.eig, torch.linalg.eigh)),
         (lambda res, unit: (res[:2] + (res[2] * unit,)),
          update_wrapper(lambda A: torch.lu_unpack(*torch.lu(A)), torch.lu_unpack)),
         (lambda res, unit: (res[0], res[1] * unit),
@@ -495,7 +496,7 @@ class TestDefault(TestQfuncsBase):
     def test_default(self, func: Callable[[_VT], _nestedVT], q: ConcreteQuantity, **kwargs):
         if isinstance(func, tuple):
             func, kwargs = func
-        self._tree_compare(func(q), pytree.tree_map(q.unit.__mul__, func(q.value)), **kwargs)
+        self._tree_compare(func(q), optree.tree_map(q.unit.__mul__, func(q.value), none_is_leaf=True), **kwargs)
 
     @mark.parametrize('func', (
         torch.diag, torch.diagonal, torch.rot90,
@@ -529,9 +530,9 @@ class TestDefault(TestQfuncsBase):
         )
     ))
     def test_nonfloat_in_out(self, func: Callable[[_VT], _nestedVT], q: ConcreteQuantity):
-        self._tree_compare(func(q), pytree.tree_map(
+        self._tree_compare(func(q), optree.tree_map(
             (lambda arg: arg * q.unit if torch.is_floating_point(arg) or torch.is_complex(arg) else arg),
-            func(q.value)))
+            func(q.value), none_is_leaf=True))
 
     @mark.parametrize('func', (
         torch.atleast_1d, torch.atleast_2d, torch.atleast_3d,

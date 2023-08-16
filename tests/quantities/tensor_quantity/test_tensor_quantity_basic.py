@@ -31,8 +31,10 @@ def test_init(value: _VT, unit: Unit):
     _test(value * unit)
     _test(unit * value)
 
-    assert are_same_view((q := value / unit), value, q.value) and q.unit == ~unit
-    assert ((q := unit / value).value == 1 / value).all() and q.unit is unit
+    q = value / unit
+    assert are_same_view(q, value, q.value) and q.unit == ~unit
+    q = unit / value
+    assert (q.value == 1 / value).all() and q.unit is unit
 
     assert ((value * unit) * unit).unit == unit * unit
     assert ((value * unit) / unit).unit == unit / unit

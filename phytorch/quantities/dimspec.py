@@ -13,6 +13,7 @@ from typing import (
     Sequence, TypeVar, Union
 )
 
+import optree
 import torch
 from more_itertools import padded
 from torch import Tensor
@@ -22,7 +23,7 @@ from . import quantity, tensor_quantity
 from ..units.angular import radian
 from ..units.exceptions import UnitError
 from ..units.unit import Unit
-from ..utils import AutoUnpackable, pytree
+from ..utils import AutoUnpackable
 
 
 _Unitful = (quantity.GenericQuantity, Unit)
@@ -47,8 +48,8 @@ class Eval:
 _T = TypeVar('_T')
 _UnitSpecT: TypeAlias = Union[Unit, str, Eval, None]
 _OUnitSpecT: TypeAlias = Union[_UnitSpecT, Literal[False]]
-_InputUnitSpecT: TypeAlias = Union[Iterable['_InputUnitSpecT'], Mapping[str, '_InputUnitSpecT'], _UnitSpecT]
-__OutputUnitSpecT: TypeAlias = Union[Iterable['__OutputUnitSpecT'], Mapping[str, '__OutputUnitSpecT'], _OUnitSpecT]
+_InputUnitSpecT: TypeAlias = Union[Iterable['_InputUnitSpecT'], Mapping[str, '_InputUnitSpecT'], _UnitSpecT, optree.PyTree[_UnitSpecT]]
+__OutputUnitSpecT: TypeAlias = Union[Iterable['__OutputUnitSpecT'], Mapping[str, '__OutputUnitSpecT'], _OUnitSpecT, optree.PyTree[_OUnitSpecT]]
 _OutputUnitSpecT: TypeAlias = Union[__OutputUnitSpecT, str, Callable[[...], __OutputUnitSpecT]]
 _ctxVT: TypeAlias = Any
 
@@ -80,7 +81,7 @@ class BasicDimSpec(AutoUnpackable, AbstractDimSpec):
 
     def __call__(self, *args) -> tuple[Sequence, BasePostprocessor]:
         return args, BasePostprocessor(
-            pytree.tree_map(lambda a: a.unit if isinstance(a, _Unitful) else False, args[0])
+            optree.tree_map(lambda a: a.unit if isinstance(a, _Unitful) else False, args[0], none_is_leaf=True)
             if self.ret is None else self.ret)
 
 
@@ -105,8 +106,13 @@ class BasePostprocessor:
         return output.value if isinstance(output, quantity.GenericQuantity) else output
 
     def process(self, output, spec):
-        _outputs, _tree = pytree.tree_flatten(output)
-        return pytree.tree_unflatten([
+        _outputs, _tree = optree.tree_flatten(output, none_is_leaf=True)
+        _spec = (
+            optree.broadcast_prefix(spec, output, none_is_leaf=True)
+            if optree.tree_structure(spec, none_is_leaf=True).is_prefix(_tree, strict=False)
+            else spec
+        )
+        return optree.tree_unflatten(_tree, (
             self.process_filtered(o) if (
                 s is False
                 or (self.dimless_to_value and isinstance(s, Unit)
@@ -114,9 +120,8 @@ class BasePostprocessor:
                 or not self.filter(o)
             ) else o._meta_update(o, unit=s)
             if isinstance(o, quantity.GenericQuantity) else o
-            for _spec in [pytree._broadcast_to_and_flatten(spec, _tree)]
-            for o, s in zip(_outputs, (_spec if _spec is not None else spec))
-        ], _tree)
+            for o, s in zip(_outputs, _spec)
+        ))
 
     def __call__(self, output):
         return self.process(output, self.ret)
@@ -124,12 +129,12 @@ class BasePostprocessor:
 
 class MultiproductDimSpec(BasicDimSpec):
     def __call__(self, *args) -> tuple[Sequence, BasePostprocessor]:
-        _args, treespec = pytree.tree_flatten(args)
+        _args, treespec = optree.tree_flatten(args, none_is_leaf=True)
 
         retargs, units = zip(*(
             (arg.value, arg.unit) if isinstance(arg, _Unitful) else (arg, None)
             for arg in _args))
-        return pytree.tree_unflatten(retargs, treespec), BasePostprocessor(reduce(operator.mul, filter(
+        return optree.tree_unflatten(treespec, retargs), BasePostprocessor(reduce(operator.mul, filter(
             partial(operator.is_not, None), units
         )))
 
@@ -161,8 +166,8 @@ class DimSpec(BasicDimSpec):
             retargs = []
 
             for _arg, _unit in zip(args, padded(self.params, None)):
-                _args, _tree = pytree.tree_flatten(_arg)
-                _units = pytree._broadcast_to_and_flatten(_unit, _tree)
+                _args, _tree = optree.tree_flatten(_arg, none_is_leaf=True)
+                _units = optree.broadcast_prefix(_unit, _arg, none_is_leaf=True)
 
                 _retarg = []
                 for arg, unit in zip(_args, _units):
@@ -188,7 +193,7 @@ class DimSpec(BasicDimSpec):
                                 arg = arg / float(unit.value)
 
                     _retarg.append(arg)
-                retargs.append(pytree.tree_unflatten(_retarg, _tree))
+                retargs.append(optree.tree_unflatten(_tree, _retarg))
         else:
             retargs = args
 
@@ -207,7 +212,7 @@ class Postprocessor(BasePostprocessor):
         )
 
     def __call__(self, output: _T) -> _T:
-        return self.process(output, pytree.tree_map(self.process_spec, self.ret))
+        return self.process(output, optree.tree_map(self.process_spec, self.ret, none_is_leaf=True))
 
 
 dimless = Unit()
@@ -334,7 +339,7 @@ class _dimspecs:
 
     inverse = pinverse = reciprocal = DimSpec(ret=lambda unit: ~unit)
 
-    lu = linalg_lu_factor = eig = linalg_eig = symeig = lobpcg = DimSpec(ret=('unit', False))
+    lu = linalg_lu_factor = eig = linalg_eig = symeig = linalg_eigh = lobpcg = DimSpec(ret=('unit', False))
     triangular_solve = lstsq = DimSpec(('unit1', 'unit2'), lambda unit1, unit2: (
         unit1 / unit2, unit2
     ))
