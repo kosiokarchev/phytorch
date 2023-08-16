@@ -173,7 +173,7 @@ class w0wzCDM(wCDM[_w0wzCDMT, _acw0wzCDMT], ABC):
         return self.w0 - self.wz + self.wz * zp1
 
     def _de_density_scale(self, zp1: _TN):
-        return zp1 ** (3. * (1. + self.w0 - self.wz)) * exp(-3. * self.wz * zp1 - 3.*self.wz)
+        return zp1 ** (3. * (1. + self.w0 - self.wz)) * exp(3. * self.wz * (zp1-1))
 
 
     class _toAstropy(wCDM._toAstropy[_w0wzCDMT, _acw0wzCDMT]):
