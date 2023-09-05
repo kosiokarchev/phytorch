@@ -25,10 +25,17 @@ TORCH_DEFINE_IMPLEMENTATION(Tgamma, (size_t m, TENSORS_TO_SIGNATURE((a, z)))) {
 }
 
 
+TORCH_IMPLEMENT(hyp0f1, (b, z))
+TORCH_IMPLEMENT(hyp1f0, (a, z))
+TORCH_IMPLEMENT(hyp1f1, (a, b, z))
+
+
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     MDEF(gamma) MDEF(loggamma) MDEF(digamma)
     MDEF(gammainc) MDEF(gammaincc)
     MDEF(gammaincinv) MDEF(gammainccinv)
 
     MDEF(Tgamma)
+
+    MDEF(hyp0f1) MDEF(hyp1f0)  MDEF(hyp1f1)
 }

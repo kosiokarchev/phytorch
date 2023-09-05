@@ -61,9 +61,9 @@ public:
 COMPLEX_TEMPLATE_H T hypsum(const vector<T>& a_s, const vector<T>& b_s, T z, HYP_KWARGS_MAXTERMS_H);
 
 COMPLEX_TEMPLATE_H T hyper(const vector<T>& a_s, const vector<T>& b_s, T z, HYP_KWARGS_H);
-COMPLEX_TEMPLATE_H T hyp0f1(T b, T z, HYP_KWARGS_H);
-COMPLEX_TEMPLATE_H T hyp1f0(T a, T z, HYP_KWARGS_H);
-COMPLEX_TEMPLATE_H T hyp1f1(T a, T b, T z, HYP_KWARGS_H);
+COMPLEX_TEMPLATE_H T hyp0f1_(T b, T z, HYP_KWARGS_H);
+COMPLEX_TEMPLATE_H T hyp1f0_(T a, T z, HYP_KWARGS_H);
+COMPLEX_TEMPLATE_H T hyp1f1_(T a, T b, T z, HYP_KWARGS_H);
 COMPLEX_TEMPLATE_H T hyp1f2(T a, T b1, T b2, T z, HYP_KWARGS_H);
 COMPLEX_TEMPLATE_H T hyp2f0(T a1, T a2, T z, HYP_KWARGS_H);
 COMPLEX_TEMPLATE_H T hyp2f1_(T a1, T a2, T b, T z, HYP_KWARGS_H);

@@ -29,9 +29,10 @@ COMPLEX_TEMPLATE T hyper(const vector<T>& a_s, const vector<T>& b_s, T z, HYP_KW
 
     // TODO: Reduce degree by eliminating common parameters
 
-    // if (p == 0) {
-    //     if (q == 0) return exp(z);
-    //     if (q == 1) return hyp0f1<scalar_t>(b_s[0], z, force_series, maxterms);
+    if (p == 0) {
+        if (q == 0) return exp(z);
+        if (q == 1) return hyp0f1_<scalar_t>(b_s[0], z, force_series, maxterms);
+    }
     // } if (p == 1) {
     //     if (q == 0) return hyp1f0<scalar_t>(a_s[0], z, force_series, maxterms);
     //     if (q == 1) return hyp1f1<scalar_t>(a_s[0], b_s[0], z, force_series, maxterms);
@@ -61,13 +62,13 @@ COMPLEX_TEMPLATE auto hyp0f1_series(T b, T z) {
     };
 }
 
-INSTANTIATE_COMPLEX_TEMPLATE_NOARGS(hyp0f1, float)(complex<float>, complex<float>, HYP_KWARGS_TYPES);
-INSTANTIATE_COMPLEX_TEMPLATE_NOARGS(hyp0f1, double)(complex<double>, complex<double>, HYP_KWARGS_TYPES);
-COMPLEX_TEMPLATE T hyp0f1(T b, T z, HYP_KWARGS) {
+// INSTANTIATE_COMPLEX_TEMPLATE_NOARGS(hyp0f1_, float)(complex<float>, complex<float>, HYP_KWARGS_TYPES);
+// INSTANTIATE_COMPLEX_TEMPLATE_NOARGS(hyp0f1_, double)(complex<double>, complex<double>, HYP_KWARGS_TYPES);
+COMPLEX_TEMPLATE T hyp0f1_(T b, T z, HYP_KWARGS) {
     if (abs(z) > 128 and not force_series) {
         // try {
             return ltrl(R2SQRTPI) * gamma<scalar_t>(b) * hypercomb<scalar_t>(
-                (series_t<T>) ([b, z] (vector<T>) {return hyp0f1_series<scalar_t>(b, z);}),
+                (series_t<T>) ([b, z] (vector<T> params) {return hyp0f1_series<scalar_t>(b, z);}),
                 vector<T>{}, true, maxterms);
         // } catch (no_convergence& exc) { if (force_series) throw exc; }
     }
@@ -75,7 +76,31 @@ COMPLEX_TEMPLATE T hyp0f1(T b, T z, HYP_KWARGS) {
 }
 
 
-COMPLEX_TEMPLATE T hyp1f0(T a, T z, HYP_KWARGS) { return pow(1-z, -a); }
+COMPLEX_TEMPLATE T hyp1f0_(T a, T z, HYP_KWARGS) { return pow(1-z, -a); }
+
+COMPLEX_TEMPLATE auto hyp1f1_series(T z, T a, T b) {
+    auto E = exp(T(0, M_PI) * (z.imag()<0 ? -a : a));
+    return series_return_t<T>{
+        {{E, z}, {1, -a}, {b}, {b-a}, {a, 1+a-b}, {}, -1/z},
+        {{exp(z), z}, {1, a-b}, {b}, {a}, {b-a, 1-a}, {}, 1/z}
+    };
+}
+
+COMPLEX_TEMPLATE T hyp1f1_(T a, T b, T z, HYP_KWARGS) {
+    if (not z) return 1;
+    if (abs(z) > pow(ltrl(2), ltrl(6)) and not is_nonpositive_int(a)) {
+        // if (isinf(z)) {
+        //     if (abs(a)/a == abs(b)/b == abs(z)/z == 1) return TINF;
+        //     else return TNAN * z;
+        // }
+        return hypercomb<scalar_t>(
+            (series_t<T>) ([z] (vector<T> params) {return hyp1f1_series<scalar_t>(z, params[0], params[1]);}),
+            vector<T>{a, b}, true, maxterms
+        );
+    }
+
+    return hypsum<scalar_t>(vector<T>{a}, vector<T>{b}, z, maxterms);
+}
 
 
 COMPLEX_TEMPLATE
